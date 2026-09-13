@@ -1,0 +1,18 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+
+# VS Code local settings
+.vscode/
+
+# Environment / secret files
+.env
+.env.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
