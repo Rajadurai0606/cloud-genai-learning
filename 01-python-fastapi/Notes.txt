@@ -166,3 +166,28 @@ Swagger UI allows us to:
 - see HTTP methods such as GET
 - execute/test the API
 - see request and response details
+
+---------------------------------14-Sep-2026---------------------------------
+
+pydantic
+	installed -  pip install pydantic (ran in terminal)
+
+	BaseModel
+
+		Employee inherits from Pydantic BaseModel.
+
+		This gives the model features such as:
+		- request data validation
+		- type conversion
+		- field constraints
+		- serialization
+		- automatic schema generation
+
+FastAPI uses this model to validate the incoming JSON request body.
+
+	Created Employee class with Field constraints like minmum length, less than or equal and option field.
+	
+	I have executed "addemployee" endpoint through swagger with couple of request (negative/positive)
+
+
+Also explored about model_dump (dictionary), model_dump_json (json format) which we can use later in out project
