@@ -1,6 +1,6 @@
 # Cloud / Platform / GenAI Learning
 
-This repository tracks my hands-on learning journey from C#/.NET and MES development into:
+Hands-on learning repository for my transition from C#/.NET and MES development into:
 
 - Python
 - FastAPI
@@ -12,7 +12,9 @@ This repository tracks my hands-on learning journey from C#/.NET and MES develop
 
 The learning approach is project-first, with more implementation than theory.
 
-## Day 1 - Python + FastAPI
+## Current Progress
+
+### Python + FastAPI
 
 Implemented:
 
@@ -21,20 +23,30 @@ Implemented:
 - Basic Python syntax
 - FastAPI application
 - GET endpoints
-- Uvicorn
+- POST endpoint
+- Pydantic request models
+- Field validation and constraints
+- Optional fields
+- Swagger UI testing
 - requirements.txt
-- Swagger UI
 - Git and GitHub setup
 
-### API
+### API Endpoints
 
-GET `/health`
+#### GET `/health`
 
 Example response:
 
-```json
 {
-  "status": "healthy",
-  "service": "new-learning-api"
+"status": "healthy",
+"service": "new-learning-api"
 }
-```
+
+POST /employees
+
+{
+"id": "EMP001",
+"name": "Raja",
+"age": 37,
+"department": "MES"
+}

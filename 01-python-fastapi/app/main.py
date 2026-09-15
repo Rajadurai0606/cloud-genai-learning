@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 app = FastAPI(
@@ -22,13 +22,32 @@ def health_check():
         "service": "new-learning-api"
     }
 
-@app.post("/employees")
+employees: list[Employee] = []
+
+def get_employee_or_404(emp_id: str) -> Employee:
+    for emp in employees:
+        if emp.id == emp_id:
+            return emp
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=f"Employee Id - {emp_id} not found")
+
+@app.post("/employees",status_code = status.HTTP_201_CREATED)
 def add_employee(employee: Employee):
-    print("will be implementing to connect with db and add employee details later")
-    # convert into dictionary
-    print(employee.model_dump())
-    # converts into json foramt
-    print(employee.model_dump_json())
-    # to view schema
-    print(employee.model_json_schema())
+    for emp in employees:
+            if emp.id == employee.id:
+                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Employee Id - {employee.id} already exist")
+    employees.append(employee)
     return employee
+
+#path parameter
+# returns a specific employee
+@app.get("/employees/{id}", status_code=status.HTTP_200_OK)
+def get_employee(id: str):
+     return get_employee_or_404(id)
+
+#returs all employees
+@app.get("/employees")
+def get_employees() -> list[Employee]:
+     return employees
+
+
+        
