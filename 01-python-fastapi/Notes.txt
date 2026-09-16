@@ -305,3 +305,74 @@ Tested through Swagger
 
     GET /employees/{id}
         Unknown employee -> 404 Not Found
+
+---------------------------------16-Sep-2026---------------------------------
+
+Day 4 - Complete Employee CRUD
+
+Implemented:
+
+PUT /employees/{id}
+    Updates an existing employee.
+    Employee ID comes from the path parameter.
+    Request body uses EmployeeBase and does not contain the ID.
+    Returns 200 OK.
+    Returns 404 if employee does not exist.
+
+DELETE /employees/{id}
+    Finds the employee using get_employee_or_404().
+    Removes the employee from the in-memory list.
+    Returns 204 No Content.
+    Returns 404 if employee does not exist.
+
+
+Employee Models
+
+EmployeeBase
+    Contains common employee input fields:
+    name, age and department.
+
+EmployeeModel(EmployeeBase)
+    Inherits EmployeeBase and adds id.
+
+This avoids accepting different employee IDs from:
+    URL:  /employees/1
+    Body: id = 2
+
+
+ID Generation
+
+Initially considered:
+    len(employees) + 1
+
+This can create duplicate IDs after an employee is deleted.
+
+Instead, find the highest existing employee ID and add 1.
+
+Example:
+    Existing IDs: 1, 3
+    New ID: 4
+
+
+PUT vs POST vs DELETE
+
+POST
+    Creates a new resource.
+    Using 201 Created.
+
+PUT
+    Updates/replaces an existing resource.
+    Using 200 OK because the update happens immediately.
+
+DELETE
+    Removes a resource.
+    Using 204 No Content when successful.
+
+
+CRUD completed:
+
+POST    /employees
+GET     /employees
+GET     /employees/{id}
+PUT     /employees/{id}
+DELETE  /employees/{id}
