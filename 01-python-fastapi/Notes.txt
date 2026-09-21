@@ -626,3 +626,248 @@ Current Limitation
     so tests can potentially affect each other.
 
     Test isolation and pytest fixtures will be learned later when needed.
+
+---------------------------------21-Sep-2026---------------------------------
+
+Day 7 - Dockerize FastAPI Application
+
+Goal:
+    Package and run the Employee FastAPI application inside Docker.
+
+
+Docker
+    Docker allows us to package an application together with its
+    runtime and dependencies so it can run consistently in different
+    environments.
+
+
+Dockerfile
+    Dockerfile contains the instructions Docker follows to build
+    an image.
+
+    Main instructions learned:
+
+        FROM
+            Defines the base image/runtime to start from.
+
+        WORKDIR
+            Sets the working directory inside the image/container.
+
+        COPY
+            Copies required files from our project into the image.
+
+        RUN
+            Executes commands while building the image.
+            Example use: installing Python dependencies.
+
+        CMD
+            Defines the default command executed when the container starts.
+            In our case, it starts Uvicorn/FastAPI.
+
+
+Docker Image vs Container
+
+    Image
+        Packaged/read-only blueprint containing the application,
+        Python runtime, dependencies and configuration needed to run it.
+
+    Container
+        A running instance of an image.
+
+    Simple flow:
+
+        Dockerfile
+            ->
+        docker build
+            ->
+        Image
+            ->
+        docker run
+            ->
+        Container
+
+
+Building an Image
+
+    docker build -t my-fastapi .
+
+    docker build
+        Builds a Docker image.
+
+    -t my-fastapi
+        Gives the image a name/tag.
+
+    .
+        Current directory is used as the Docker build context.
+
+
+Docker Build Context
+
+    Build context is the set of files/directories Docker can access
+    while building the image.
+
+    Using "." means the current project directory is the build context.
+
+
+.dockerignore
+
+    .dockerignore tells Docker which files/folders should NOT be
+    included in the build context.
+
+    We excluded unnecessary local files such as:
+
+        .venv
+        venv
+        __pycache__
+        *.pyc
+        .pytest_cache
+        Notes.txt
+        README.md
+        .gitignore
+
+    This avoids sending unnecessary development/local files into
+    the Docker build process.
+
+    .gitignore and .dockerignore have different purposes:
+
+        .gitignore
+            -> controls what Git should not track.
+
+        .dockerignore
+            -> controls what Docker should not include in build context.
+
+
+Running the Container
+
+    docker run -p 8000:8000 my-fastapi
+
+    This creates and starts a container from the my-fastapi image.
+
+
+Port Mapping
+
+    -p 8000:8000
+
+    Format:
+
+        HOST_PORT : CONTAINER_PORT
+
+    In our case:
+
+        Windows localhost:8000
+                ->
+        Container port 8000
+
+    This allows us to access the FastAPI application running inside
+    the container from the host machine.
+
+
+Why Uvicorn Uses 0.0.0.0 Inside Docker
+
+    Inside the container, Uvicorn must listen on 0.0.0.0 so the
+    application can accept connections coming through the container's
+    network interface.
+
+    If it listens only on localhost/127.0.0.1 inside the container,
+    it would only be reachable from inside that container.
+
+    0.0.0.0 means listen on all available network interfaces.
+
+
+Docker Image Layers
+
+    Docker images are built using layers.
+
+    The base Python image already contains multiple layers.
+    Our Dockerfile adds additional layers on top.
+
+    docker image history my-fastapi
+
+    can be used to inspect image history/layers.
+
+    Seeing <missing> for some IMAGE values in image history does not
+    mean the build failed.
+
+
+Commands Learned
+
+    docker --version
+        Check Docker installation.
+
+    docker build -t my-fastapi .
+        Build image.
+
+    docker images
+        List local images.
+
+    docker run -p 8000:8000 my-fastapi
+        Create and run container.
+
+    docker image history my-fastapi
+        View image build/layer history.
+
+
+Important Learning
+
+    Before Docker:
+
+        Windows
+            ->
+        Local Python/.venv
+            ->
+        Uvicorn
+            ->
+        FastAPI
+
+
+    With Docker:
+
+        Windows
+            ->
+        Docker
+            ->
+        Container
+            ->
+        Python + Dependencies + Uvicorn + FastAPI
+
+
+    The application is now packaged with the environment required
+    to run it rather than depending directly on the local Python setup.
+
+
+Development Flow So Far
+
+    Code
+        ->
+    Automated Test
+        ->
+    Build Docker Image
+        ->
+    Run Container
+
+    Later CI/CD will automate much of this process.
+
+
+Current Limitation
+
+    Employee data is still stored only in an in-memory Python list.
+
+    Restarting/recreating the application/container will lose that data.
+
+    Persistent storage/database will be handled later when required.
+
+
+Day 7 Result
+
+    Successfully:
+
+        - Created Dockerfile
+        - Created .dockerignore
+        - Built my-fastapi Docker image
+        - Verified the image using docker images
+        - Inspected image history/layers
+        - Started a container from the image
+        - Mapped host port 8000 to container port 8000
+        - Ran Uvicorn/FastAPI successfully inside Docker
+
+    Day 7 - Completed.
