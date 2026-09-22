@@ -856,6 +856,10 @@ Current Limitation
 
     Persistent storage/database will be handled later when required.
 
+Optimization:
+    Initially used the full Python base image and the image was over 1 GB.
+    Changed to the Python slim base image and reduced the FastAPI image
+    to approximately 342 MB.
 
 Day 7 Result
 
@@ -870,4 +874,219 @@ Day 7 Result
         - Mapped host port 8000 to container port 8000
         - Ran Uvicorn/FastAPI successfully inside Docker
 
-    Day 7 - Completed.
+    Day 7 - Completed.class
+
+---------------------------------22-Sep-2026---------------------------------
+
+Day 8 - Docker Container Lifecycle and Layer Caching
+
+
+Docker Image vs Container
+
+    Image:
+        A packaged blueprint/template used to create containers.
+
+    Container:
+        A running instance created from an image.
+
+    Simple understanding:
+
+        Dockerfile
+            -> docker build
+            -> Image
+            -> docker run
+            -> Container
+
+    One image can be used to create multiple independent containers.
+
+    Simple analogy:
+        Class  -> Image
+        Object -> Container
+
+    This is only an analogy to help remember the concept.
+
+
+Image and Container Lifecycle
+
+    docker build
+        Creates an image from the Dockerfile.
+
+    docker run
+        Creates a new container from an image and starts it.
+
+    docker stop
+        Stops a running container.
+        The container still exists.
+
+    docker start
+        Starts an existing stopped container.
+
+    docker rm
+        Removes the container.
+
+    Removing a container does NOT remove its image.
+
+    The same image can be used again to create another new container.
+
+
+Useful Container Commands
+
+    docker ps
+        Shows only running containers.
+
+    docker ps -a
+        Shows all containers, including stopped containers.
+
+    docker stop <container-name>
+        Stops a running container.
+
+    docker start <container-name>
+        Starts an existing stopped container.
+
+    docker rm <container-name>
+        Removes a stopped container.
+
+    docker ps --filter "name=<container-name>"
+        Filters containers by name.
+
+
+Naming a Container
+
+    A container can be given our own meaningful name:
+
+        docker run --name cn-my-fastapi -p 8001:8000 my-fastapi:latest
+
+    If we do not provide a name, Docker automatically generates one.
+
+
+Port Mapping
+
+    Example:
+
+        -p 8001:8000
+
+    Means:
+
+        Host/Windows port 8001
+                ->
+        Container port 8000
+
+    Therefore the FastAPI application running on port 8000 inside
+    the container can be accessed from:
+
+        localhost:8001
+
+
+Docker Layer Caching
+
+    Docker builds the image step by step and remembers (caches)
+    previous build steps.
+
+    Example build order:
+
+        1. Use Python base image
+        2. Copy requirements.txt
+        3. Install dependencies
+        4. Copy application code
+
+    If we later change only main.py:
+
+        Python base did not change       -> reuse cache
+        requirements.txt did not change -> reuse cache
+        dependencies did not change     -> reuse cache
+        application code changed        -> rebuild this part
+
+    This is why we copy requirements.txt and install dependencies
+    BEFORE copying the application code.
+
+    requirements.txt changes rarely.
+    Application code changes frequently.
+
+    If we copy the whole application first, even a small change to
+    main.py can cause the later dependency installation step to run again.
+
+    Simple understanding:
+
+        No change -> Docker can reuse cached work
+        Change    -> Docker rebuilds from the affected step onward
+
+    Benefit:
+        Faster Docker builds and avoids reinstalling dependencies
+        unnecessarily.
+
+
+Docker Image Optimization
+
+    Initially used the full Python base image and the FastAPI image
+    was over 1 GB.
+
+    Changed to the Python slim base image and reduced the image size
+    to approximately 342 MB.
+
+    Smaller base images can reduce image size and unnecessary content.
+
+    No further image-size optimization is required at this stage.
+
+
+Practical Exercise Completed
+
+    Verified running containers using docker ps.
+
+    Verified running + stopped containers using docker ps -a.
+
+    Started an existing stopped container.
+
+    Stopped the container.
+
+    Removed the container.
+
+    Confirmed that removing the container did not remove the image.
+
+    Created a new container from the same my-fastapi image.
+
+    Named the new container cn-my-fastapi.
+
+    Mapped host port 8001 to container port 8000.
+
+    Verified the FastAPI /health endpoint successfully from:
+
+        localhost:8001/health
+
+
+Important Learning
+
+    Image and container have separate lifecycles.
+
+    Stopping a container:
+        -> container still exists
+        -> image still exists
+
+    Removing a container:
+        -> container is deleted
+        -> image still exists
+
+    Removing the image:
+        -> removes the image itself
+
+    As long as the image exists, we can use it to create new containers.
+
+    Docker caching makes repeated builds faster by reusing unchanged
+    build steps.
+
+
+Day 8 Result
+
+    Understood and practically verified:
+
+        - Image vs container
+        - Container lifecycle
+        - docker ps vs docker ps -a
+        - docker start / stop / rm
+        - Container naming
+        - Port mapping
+        - Multiple containers can be created from one image
+        - Docker layer caching
+        - Why Dockerfile instruction order matters
+        - Python slim image optimization
+
+    Day 8 - Completed.
