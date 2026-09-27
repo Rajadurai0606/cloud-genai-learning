@@ -17,3 +17,5 @@ Notes.txt
 README.md
 
 .gitignore
+
+.env
