@@ -2063,6 +2063,19 @@ Docker build
 - The Day-11 summary identifies the new local image as employee-api:v2.
 
 Docker tag
+    Docker tag gives an image another reference/name. A registry-qualified image name also identifies the registry/repository destination 
+    that can be used by a later docker push. docker tag itself does not upload the image.
+
+    docker tag employee-api:v2 europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v2
+    employee-api:v2 - Source (from docker)
+    europe-west2-docker.pkg.dev - Registry host
+    cloud-genai-learning - Project
+    employee-api - Repository
+    employee-api : v2 - employee-api - Image, v2 - Tag
+
+    docker tag creates another reference to the same image. How we name that reference matters, because a registry-qualified reference 
+    contains the destination information that docker push will later use.
+
 - Adds another reference/name pointing to the same image; it does not copy it.
 - A full registry name also supplies the destination for a later push.
 - Tagging does not upload the image and does not deploy the app.
@@ -2161,3 +2174,103 @@ chatgpt-conversation://6aa66e73-10d4-83ed-b1d2-0f0f2ca78540
 
 Day 11 outcome: rollback to v1 and restoration to v2 verified in the original
 screenshots. No cloud resources were changed while preparing these files.
+---------------------------------29-Sep-2026---------------------------------
+
+DAY 12 - Environment variables and Cloud Run configuration
+Project: 01-python-fastapi
+
+1. Environment variables and PowerShell
+Environment variables supply runtime settings without changing application code.
+Our .env contained PORT=5000. APP_VERSION and APP_ENV came from the
+PowerShell session used to launch Python:
+
+$env:APP_VERSION="3.0"
+$env:APP_ENV="development"
+
+Python reads its process environment with:
+os.getenv("APP_VERSION")
+os.getenv("APP_ENV")
+
+The application returned 3.0 / development. A child process inherits the
+session environment when launched. .env is a convenient text file, not a
+requirement for every variable. os.getenv() does not itself load .env.
+
+2. Docker -e (exact command from the conversation)
+docker run --name cn-employee-api-v3 `
+  -e APP_VERSION=3.0 `
+  -e APP_ENV=development `
+  -p 8080:8000 employee-api:v3
+
+-e sets a variable inside that container. -p 8080:8000 maps host port 8080
+to container port 8000. PowerShell session variables are not automatically
+copied into a Docker container by this command.
+
+3. Same image, different container configuration
+Both containers used employee-api:v3:
+Container A: APP_VERSION=3.0, APP_ENV=development
+Container B: APP_VERSION=3.1, APP_ENV=dev
+Each container reads its own environment. Same image + different runtime
+configuration can produce different behaviour. APP_VERSION is a setting;
+changing it does not rebuild or change the image tag.
+
+4. --env-file .env (exact examples from the conversation)
+docker run `
+  -e APP_VERSION=3.2 `
+  -e APP_ENV=test `
+  -e ABC=123 `
+  -e XYZ=456 `
+  employee-api:v3
+
+docker run --env-file .env employee-api:v3
+
+We CAN use many -e arguments. --env-file is easier to manage when there
+are many variables. It reads definitions from the named file into the
+container environment. The examples are equivalent only if .env contains
+the same assignments. A file containing only PORT=5000 does not supply
+APP_VERSION or APP_ENV. .env is not specific to Docker.
+
+5. Build, tag, push and Artifact Registry
+Build packages the application into employee-api:v3. Tag gives the local
+image its Artifact Registry address. Push uploads it to that registry,
+where Cloud Run can retrieve it.
+
+RECONSTRUCTED REFERENCE COMMANDS - not recovered verbatim from the chat.
+Run from 01-python-fastapi, with its Dockerfile and registry access ready:
+docker build -t employee-api:v3 .
+docker tag employee-api:v3 europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v3
+docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v3
+
+The repository/image path is visible in the Cloud Run screenshot; v3 is
+recorded in the conversation. Earlier build/tag/push messages were not
+available, so these commands are examples rather than an execution record.
+
+6. Cloud Run v3 deployment
+Service: employee-api; project: cloud-genai-learning; region: europe-west2.
+The conversation records deployment of employee-api:v3 with:
+APP_VERSION=3.0
+APP_ENV=production
+Revision history shows employee-api-00003-4kx before the staging revision.
+Cloud Run uses the image stored in Artifact Registry. No exact initial
+deployment command was available in the retrieved messages.
+
+7. Change only APP_ENV to staging
+In the Cloud Run Containers settings, keep the same image and set:
+APP_VERSION=3.0
+APP_ENV=staging
+Choose View diff & redeploy. Review shows production -> staging and no
+image change. Keep Serve this revision immediately selected, then Deploy changes.
+No docker build, docker tag or docker push is needed for this change.
+
+8. Verify the result and understand revisions
+New revision: employee-api-00004-45h; 100% traffic.
+API response: {"message":"Employee API","version":"3.0","environment":"staging"}
+A revision is an immutable snapshot of the deployed service configuration,
+including the image and revision-level settings such as environment variables.
+Changing APP_ENV creates a new snapshot even though the image is unchanged.
+Building a Docker image locally does not itself create a Cloud Run revision.
+
+Remember:
+Image = packaged application. Container = running instance.
+Environment variables = runtime configuration.
+Cloud Run revision = immutable deployed configuration.
+
