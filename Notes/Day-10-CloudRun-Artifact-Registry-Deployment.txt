@@ -1,0 +1,695 @@
+Day 10 - Cloud Run and Artifact Registry deployment
+Date: 27-Sep-2026
+
+CONCEPTS IN THIS FILE
+- gcloud
+- registry authentication
+- push
+- tags and digests
+- Cloud Run setup
+- scaling
+- ingress
+- ports
+- logs
+- revisions
+
+ORIGINAL LEARNING NOTES
+
+
+Day 10 - Deploy FastAPI Container to GCP Cloud Run
+
+Goal:
+Deploy the FastAPI Docker container to Google Cloud Platform (GCP)
+using Artifact Registry and Cloud Run.
+
+Overall Flow:
+
+FastAPI Source Code
+        |
+        v
+Docker Image
+        |
+        v
+Artifact Registry
+        |
+        v
+Cloud Run
+        |
+        v
+Public HTTPS URL
+        |
+        v
+FastAPI / Swagger
+
+
+1. Google Cloud Project
+
+Created/used GCP project:
+
+    cloud-genai-learning
+
+A GCP Project is the main logical container for our cloud resources.
+
+Resources such as:
+- Artifact Registry
+- Cloud Run
+- APIs
+- IAM / Service Accounts
+- Billing
+
+belong to a GCP project.
+
+
+2. Google Cloud CLI
+
+Installed Google Cloud CLI locally.
+
+Verified installation:
+
+    gcloud --version
+
+Initialized gcloud:
+
+    gcloud init
+
+During initialization:
+- Signed in using Google account
+- Selected project:
+
+    cloud-genai-learning
+
+Verify current configuration:
+
+    gcloud config list
+
+This shows the active:
+- account
+- project
+- configuration
+
+
+3. Artifact Registry
+
+Created Docker Artifact Registry repository:
+
+    Repository: employee-api
+    Region: europe-west2
+    Format: Docker
+
+Artifact Registry is where the Docker image is stored in GCP.
+
+Important:
+
+Docker itself creates/runs the image locally.
+
+Artifact Registry stores the built image remotely so that
+cloud services such as Cloud Run can deploy it.
+
+Flow:
+
+    Local Docker Image
+            |
+            | docker push
+            v
+    GCP Artifact Registry
+
+
+4. Configure Docker Authentication
+
+Docker must authenticate with GCP before it can push images
+to Artifact Registry.
+
+Configured Docker credential helper:
+
+    gcloud auth configure-docker europe-west2-docker.pkg.dev
+
+This updated Docker configuration so that Docker can use
+Google Cloud credentials for:
+
+    europe-west2-docker.pkg.dev
+
+Without this authentication, Docker push will fail because
+Artifact Registry is not an anonymous/public Docker registry.
+
+
+5. Push Docker Image to Artifact Registry
+
+Image path:
+
+    europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:latest
+
+Pushed image:
+
+    docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:latest
+
+Push completed successfully.
+
+Artifact Registry then showed the employee-api image with
+the "latest" tag.
+
+Important:
+
+The image digest (sha256:...) uniquely identifies the exact
+contents of an image.
+
+Tag:
+
+    latest
+
+is a friendly/movable name.
+
+Digest:
+
+    sha256:...
+
+identifies the exact immutable image content.
+
+
+6. Cloud Run
+
+Cloud Run is a fully managed service for running containers.
+
+Instead of manually creating:
+- VM
+- Kubernetes cluster
+- Pods
+- Load balancer
+
+we give Cloud Run our container image and Google manages
+the underlying infrastructure.
+
+Created Cloud Run service:
+
+    Service: employee-api
+    Region: europe-west2 (London)
+
+Selected the existing employee-api container image from
+Artifact Registry.
+
+
+7. Cloud Run Authentication
+
+Selected:
+
+    Allow public access
+
+This allows us to access the learning API directly from the
+browser without authentication.
+
+This is useful for the current learning exercise.
+
+For a real production application, public access should only
+be enabled when the API is intentionally public. Otherwise
+IAM/authentication should be configured.
+
+
+8. Billing Mode
+
+Selected:
+
+    Request-based
+
+With request-based billing, CPU is primarily allocated while
+the container is processing requests.
+
+This is suitable for our small learning API.
+
+
+9. Autoscaling and Cost Protection
+
+Selected:
+
+    Auto scaling
+
+Configured:
+
+    Minimum instances = 0
+    Maximum instances = 1
+
+Minimum = 0
+
+Cloud Run can scale the application down to zero instances
+when there are no requests.
+
+This helps avoid keeping an instance running unnecessarily.
+
+Maximum = 1
+
+For our learning project, only one instance is allowed.
+
+This prevents accidental traffic from causing the application
+to scale to many instances.
+
+These settings help control cost during learning.
+
+Important:
+
+Free-tier allowances do NOT mean that every GCP resource is
+guaranteed to cost £0.
+
+Always:
+- keep learning resources small
+- configure sensible scaling limits
+- monitor billing
+- remove unused resources
+
+
+10. Ingress
+
+Selected:
+
+    All
+
+This allows requests to reach the Cloud Run service directly
+from the internet.
+
+Combined with:
+
+    Allow public access
+
+we can access the FastAPI application from the browser.
+
+
+11. Container Port
+
+Configured Cloud Run container port:
+
+    8080
+
+Cloud Run sends incoming requests to the container on this port.
+
+Our application does not need the public URL to contain:
+
+    :8080
+
+because 8080 is the INTERNAL container port.
+
+Public request flow:
+
+    Browser
+       |
+       | HTTPS
+       | Port 443
+       v
+    Cloud Run
+       |
+       | Internal routing
+       v
+    Container :8080
+       |
+       v
+    FastAPI / Uvicorn
+
+Therefore:
+
+    https://employee-api-....run.app
+
+is correct.
+
+We do NOT use:
+
+    https://employee-api-....run.app:8080
+
+
+12. PORT Environment Variable
+
+Locally, .env may contain:
+
+    PORT=5000
+
+But Cloud Run provides its own PORT environment variable.
+
+For this deployment Cloud Run uses:
+
+    PORT=8080
+
+Therefore the application should not depend on a permanently
+hardcoded port.
+
+The application should read the runtime PORT value.
+
+This allows the same application/container to run in
+different environments.
+
+Example:
+
+Local:
+
+    PORT=5000
+
+Cloud Run:
+
+    PORT=8080
+
+
+13. Container Resources
+
+Configured:
+
+    CPU    = 1
+    Memory = 512 MiB
+
+These resources are sufficient for the small FastAPI
+learning application.
+
+No GPU or additional disk was required.
+
+
+14. Service Account
+
+Selected:
+
+    Default compute service account
+
+The service account represents the identity used by the
+Cloud Run revision when it needs to access other GCP
+resources.
+
+For this simple learning API, the default service account
+is sufficient.
+
+For production systems, we should normally create a
+dedicated service account and grant only the permissions
+required by the application.
+
+This follows the principle of least privilege.
+
+
+15. Encryption
+
+Selected:
+
+    Google-managed encryption key
+
+Google manages the encryption keys automatically.
+
+Did NOT select:
+
+    Cloud KMS key
+
+Customer-managed KMS keys are useful when an organization
+needs direct control over encryption keys, rotation,
+permissions, etc.
+
+Not required for this learning exercise.
+
+
+16. Binary Authorization
+
+Binary Authorization was NOT enabled.
+
+Binary Authorization can be used to control which container
+images are permitted to be deployed.
+
+This is a more advanced security/deployment topic and is not
+required for the current learning exercise.
+
+
+17. Cloud Run Deployment
+
+Cloud Run successfully created:
+
+- Service
+- Revision
+- Traffic routing
+
+Revision created similar to:
+
+    employee-api-00001-...
+
+A revision represents a particular deployed version/configuration
+of the Cloud Run service.
+
+Future deployments can create new revisions.
+
+This allows Cloud Run to support:
+- deployment history
+- traffic splitting
+- rollback to previous revisions
+
+
+18. Public API Verification
+
+Cloud Run generated a public HTTPS endpoint.
+
+Root endpoint:
+
+    GET /
+
+returned:
+
+    "hello Raja"
+
+This confirmed that the container was running successfully
+inside Cloud Run.
+
+
+19. Swagger Verification
+
+FastAPI Swagger UI was available at:
+
+    /docs
+
+Swagger showed:
+
+    GET     /
+    GET     /health
+    GET     /employees
+    POST    /employees
+    GET     /employees/{id}
+    PUT     /employees/{id}
+    DELETE  /employees/{id}
+
+This confirmed that the complete FastAPI application was
+running in GCP, not just the root endpoint.
+
+
+20. Employee API Verification
+
+Executed:
+
+    GET /employees
+
+from Swagger.
+
+Response:
+
+    HTTP 200
+
+Employee data was returned successfully.
+
+This verifies the complete flow:
+
+Browser
+   |
+   v
+Cloud Run HTTPS Endpoint
+   |
+   v
+Cloud Run Instance
+   |
+   v
+Docker Container
+   |
+   v
+Uvicorn
+   |
+   v
+FastAPI
+   |
+   v
+Employee Router
+
+
+21. Cloud Run Logs / Observability
+
+Viewed logs from:
+
+    Cloud Run
+      -> employee-api
+      -> Observability
+      -> Logs
+
+Important logs observed:
+
+    Started server process
+
+    Waiting for application startup.
+
+    Application startup complete.
+
+    Uvicorn running on http://0.0.0.0:8080
+
+    Default STARTUP TCP probe succeeded
+
+Also saw HTTP request logs for:
+
+    GET /
+    GET /docs
+    GET /openapi.json
+    GET /employees
+
+with successful:
+
+    HTTP 200
+
+Cloud Run automatically captures application stdout/stderr
+and platform/request logs.
+
+This means our normal Python/Uvicorn logging can be viewed
+through GCP Cloud Run Observability.
+
+
+22. favicon.ico 404
+
+Saw:
+
+    GET /favicon.ico
+    404 Not Found
+
+This is NOT an application problem.
+
+The browser automatically requests a favicon.
+
+Our FastAPI application does not provide one, so 404 is
+expected and can be ignored.
+
+
+23. Cloud Run vs Kubernetes / GKE
+
+Important distinction:
+
+Cloud Run does NOT expose Kubernetes Pods for us to manage.
+
+Cloud Run:
+
+    Docker Container
+          |
+          v
+    Cloud Run Revision
+          |
+          v
+    Managed Instance(s)
+
+Google manages the underlying infrastructure.
+
+Therefore we don't run:
+
+    kubectl get pods
+
+for this Cloud Run service.
+
+With GKE/Kubernetes later:
+
+    Docker Image
+         |
+         v
+    Kubernetes Deployment
+         |
+         v
+    Pod(s)
+
+and we will use commands such as:
+
+    kubectl get pods
+    kubectl logs <pod-name>
+
+
+24. Day 10 Final Architecture
+
+Development machine
+        |
+        | docker build
+        v
+Local Docker Image
+        |
+        | gcloud authentication
+        | docker push
+        v
+GCP Artifact Registry
+        |
+        | Cloud Run deploys image
+        v
+Cloud Run Service
+        |
+        v
+Cloud Run Revision
+        |
+        v
+Managed Container Instance
+        |
+        | Internal port 8080
+        v
+FastAPI / Uvicorn
+        |
+        | Cloud Run exposes HTTPS
+        v
+Public HTTPS Endpoint :443
+        |
+        +----> /
+        |
+        +----> /health
+        |
+        +----> /docs
+        |
+        +----> /employees
+
+
+Day 10 Key Learning:
+
+Today connected everything learned so far:
+
+    Python
+      -> FastAPI
+      -> Testing
+      -> Docker
+      -> Container Registry
+      -> Google Cloud
+      -> Cloud Run
+
+The application is no longer running only on the local laptop.
+
+The same Docker container is now stored in Artifact Registry
+and running as a publicly accessible cloud service.
+
+
+Quick Revision Questions:
+
+1. What is Artifact Registry?
+   -> GCP service used to store container images/artifacts.
+
+2. Why run gcloud auth configure-docker?
+   -> Allows Docker to authenticate with GCP Artifact Registry.
+
+3. What does docker push do?
+   -> Uploads the local Docker image layers to the registry.
+
+4. What is Cloud Run?
+   -> Fully managed service for running containers without
+      managing servers or Kubernetes.
+
+5. Why minimum instances = 0?
+   -> Allows the service to scale to zero when unused.
+
+6. Why maximum instances = 1 for this project?
+   -> Limits scaling and helps protect against unexpected
+      learning-project cost.
+
+7. Why is 8080 not in the public URL?
+   -> 8080 is the internal container port. Cloud Run exposes
+      the service publicly over HTTPS/443.
+
+8. What is a Cloud Run revision?
+   -> A deployed version/configuration of the Cloud Run service.
+
+9. Where are application logs viewed?
+   -> Cloud Run -> Service -> Observability -> Logs.
+
+10. Does Cloud Run give us Kubernetes Pods to manage?
+    -> No. Cloud Run manages the underlying infrastructure.
+       Pods become relevant when learning GKE/Kubernetes.
+
+
+DAY 10 COMPLETED:
+FastAPI Docker container successfully pushed to GCP Artifact Registry
+and deployed to Cloud Run.

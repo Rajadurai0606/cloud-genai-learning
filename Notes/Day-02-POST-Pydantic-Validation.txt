@@ -1,0 +1,54 @@
+Day 02 - POST endpoint and Pydantic validation
+Date: 14-Sep-2026
+
+CONCEPTS IN THIS FILE
+- BaseModel
+- Field constraints
+- optional fields
+- request bodies
+- 422 errors
+- model_dump
+- model_dump_json
+
+ORIGINAL LEARNING NOTES
+
+
+pydantic
+	installed -  pip install pydantic (ran in terminal)
+
+	BaseModel
+
+		Employee inherits from Pydantic BaseModel.
+
+		This gives the model features such as:
+		- request data validation
+		- type conversion
+		- field constraints
+		- serialization
+		- automatic schema generation
+
+FastAPI uses this model to validate the incoming JSON request body.
+
+	Created Employee class with Field constraints like minmum length, less than or equal and option field.
+	
+	I have executed "addemployee" endpoint through swagger with couple of request (negative/positive)
+
+
+Also explored about model_dump (dictionary), model_dump_json (json format) which we can use later in out project
+
+Day 2 - POST endpoint and Pydantic validation
+
+Learned:
+- BaseModel
+- Field validation
+- Optional fields
+- POST request body
+- FastAPI automatic validation
+- 422 validation response
+- model_dump()
+- model_dump_json()
+
+Tested:
+- Valid employee request -> 200
+- Invalid age -> 422
+- Optional department omitted -> accepted
