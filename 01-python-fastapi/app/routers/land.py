@@ -1,14 +1,23 @@
 from fastapi import APIRouter
 import os
 import logging
+import socket
+import time
+import uuid
+
+INSTANCE_ID = str(uuid.uuid4())[:8]
 
 api_key = os.getenv("API_KEY")
 
 logger = logging.getLogger(__name__)
 
+
 router = APIRouter()
 @router.get("/")
 def root():
+    logger.info(f"Initial call before delay - instance={INSTANCE_ID}")
+    time.sleep(10) #10 sec delay
+    logger.info(f"Request handled by instance={INSTANCE_ID}")
     logger.info(
         "Landing enpoint called version=%s, environment=%s",
         os.getenv("APP_VERSION","local"),
