@@ -1,0 +1,128 @@
+# Day 14 - Cloud Run Logging and Observability
+Date: 2 October 2026
+
+## 1. What I learned
+I added Python application logs, checked them locally, deployed updated Docker
+images, and found the same application messages in Cloud Run logs.
+Observability here means seeing what the running application is doing through logs.
+
+## 2. Python logging setup
+Configure logging once near the top of app/main.py:
+
+```python
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(name)s - %(message)s"
+)
+```
+
+## In app/routers/land.py, create a logger for that module:
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+```
+
+The format shows the level, module name, and message. In this application,
+the module name is app.routers.land. With level=logging.INFO, INFO,
+WARNING, and ERROR messages are included.
+
+## The landing endpoint logs the configuration when / is called:
+
+```python
+logger.info(
+    "Landing endpoint called version=%s, environment=%s",
+    os.getenv("APP_VERSION", "local"),
+    os.getenv("APP_ENV", "local")
+)
+```
+
+This example also needs import os. The %s placeholders insert the values.
+The logging setup belongs centrally in main.py; modules use their own logger.
+
+## 3. Local verification
+Run the API locally and call /. Check the terminal for the application log:
+INFO: app.routers.land - Landing endpoint called version=local, environment=local
+The Uvicorn GET / 200 OK access log is a separate message about the request.
+The conversation also confirmed local Docker testing of v5.
+
+## 4. Docker images v5 and v6
+v5 was the first Day 14 image with the application INFO log. It was built,
+tested locally in Docker, pushed to Artifact Registry, and deployed to Cloud Run.
+v6 added the three-level logging experiment and repeated the deployment flow.
+
+Flow used: change code -> build -> tag -> push -> select image -> deploy revision.
+Build creates the image; tag gives it the registry destination name; push uploads it.
+Build command pattern (the exact build command is not visible in the recovered screenshots):
+```powershell
+docker build -t employee-api:v5 .
+docker build -t employee-api:v6 .
+```
+
+The v6 terminal screenshot shows these commands:
+```powershell
+docker tag employee-api:v6 europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v6
+docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v6
+```
+
+The same tag/push pattern applies to v5 with :v5 in both places.
+The successful v6 push ended with a digest. Some unchanged layers already existed.
+Artifact Registry stores the uploaded images. The screenshots show the employee-api
+repository in europe-west2 and the v5 tag; the Cloud Run image selector shows v6.
+
+## 5. Cloud Run deployment and API check
+Select the uploaded image from Artifact Registry in Cloud Run, review the image
+change, and deploy a new revision. A revision is a deployed version of the service.
+The deployment status screenshot shows updating service, creating revision,
+and routing traffic completed.
+
+Open the service URL and call /. The response screenshot shows:
+message: Employee API
+version: 3.0
+environment: staging
+api_key_configured: true
+
+Cloud Run supplies APP_VERSION=3.0 and APP_ENV=staging. The same code uses
+local defaults when those environment variables are absent.
+Docker tags v5/v6 and the application response version 3.0 are separate values.
+
+## 6. INFO, WARNING, and ERROR experiment
+Add these calls to the endpoint, run locally, and call /:
+
+```python
+logger.info("This is an INFO log")
+logger.warning("This is a WARNING log")
+logger.error("This is an ERROR log")
+```
+
+INFO: normal useful application activity.
+WARNING: something unusual; the application may continue.
+ERROR: a failure that needs attention.
+
+For this experiment, the WARNING and ERROR messages were deliberately written
+to learn the levels. Writing logger.error() alone does not make the API fail.
+The final screenshot also shows the request completed with 200 OK.
+
+## 7. Cloud Run logs
+After deploying v6, call / and open Cloud Run -> Observability -> Logs.
+The final screenshot shows:
+INFO: app.routers.land - This is an INFO log
+WARNING: app.routers.land - This is a WARNING log
+ERROR: app.routers.land - This is an ERROR log
+
+Application -> Python logger -> container output -> Cloud Run / Cloud Logging.
+Application messages appear alongside server and request logs. The level and
+module name help identify the application's own messages.
+The screenshot proves the level text in the messages; structured Cloud Logging
+severity mapping and severity filtering were not demonstrated in this session.
+
+## 8. What was completed
+Python logging setup and local verification; v5/v6 image deployment flow;
+Artifact Registry image selection; Cloud Run revision deployment and API check;
+application INFO, WARNING, and ERROR messages visible in Cloud Run logs.
+
+Source: New_Learning_1 conversation and its recovered Day 14 screenshots.
+The workbook contains the 10 recovered screenshots with concise captions.
+Local terminal and build completion are described in the conversation; those
+screenshots were not among the recovered attachments.

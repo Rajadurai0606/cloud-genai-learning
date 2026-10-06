@@ -1,0 +1,105 @@
+# Day 03 - GET employees and HTTP status codes
+Date: 15-Sep-2026
+
+## Concepts in this file
+- Python lists
+- path parameters
+- employee lookup
+- HTTPException
+- 200, 201, 404 and 409
+- in-memory storage
+
+## ORIGINAL LEARNING NOTES
+
+## Day 3 - Employee API - GET list + GET by ID
+
+Python List
+Created an in-memory employee list:
+
+```python
+employees: list[Employee] = []
+```
+
+Similar to List<Employee> in C#.
+
+append() is used to add an employee to the list.
+
+## Path Parameter
+
+Created an endpoint to get an employee using employee id:
+
+GET /employees/{id}
+
+The employee id from the URL is passed to the Python function.
+
+## Employee Lookup
+
+Loop through the employee list and compare employee id.
+
+If employee exists:
+```python
+return Employee
+```
+
+If employee does not exist:
+raise HTTPException with 404 Not Found
+
+## HTTPException
+
+HTTPException should be raised, not returned.
+
+raise HTTPException(...)
+
+This stops normal processing and FastAPI returns an HTTP error response.
+
+## HTTP Status Codes used
+
+200 OK
+Request completed successfully.
+
+201 Created
+Employee was created successfully.
+
+404 Not Found
+Requested employee does not exist.
+
+409 Conflict
+Employee with the same id already exists.
+
+## GET All Employees
+
+GET /employees
+
+Returns the employees currently stored in the in-memory list.
+
+## In-Memory Storage
+
+employees list exists only in the running Python process memory.
+
+When Uvicorn/application is restarted, the list is initialized again:
+
+```python
+employees: list[Employee] = []
+```
+
+Therefore all previously added employees are lost.
+
+Later we will need persistent storage/database when we want data
+to survive application restarts.
+
+## Tested through Swagger
+
+POST /employees
+New employee -> 201 Created
+
+POST /employees with same id
+Duplicate employee -> 409 Conflict
+
+GET /employees
+Returns employee list
+
+GET /employees/{id}
+Existing employee -> 200 OK
+
+GET /employees/{id}
+Unknown employee -> 404 Not Found

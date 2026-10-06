@@ -34,3 +34,19 @@ def root():
     "environment": os.getenv("APP_ENV","local"),
     "api_key_configured": bool(api_key)
 }
+
+@router.get("/cpu-test")
+def cpu_test():
+    logger.info("CPU test started")
+
+    total = 0
+
+    for i in range(50_000_000):
+        total += i * i
+
+    logger.info("CPU test completed")
+
+    return {
+        "message": "CPU test completed",
+        "result": total
+    }

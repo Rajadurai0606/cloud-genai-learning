@@ -1,0 +1,182 @@
+# Day 16 — Cloud Run Autoscaling & Concurrency
+
+## What I learned
+
+I tested how Cloud Run handles overlapping requests. With concurrency set to 1 and maximum instances set to 2, two terminal requests were handled by different instance IDs: a3241268 and 6ea40b99.
+
+## Image and container instance
+
+An image is the packaged application: code, dependencies and startup instructions. A container instance is a running copy of that image. One image can start several instances. Each instance can handle many requests over its lifetime.
+
+For example, employee-api:v9 is an image tag. It does not mean nine instances. The API response still showed application version 3.0; application version and Docker image tag are separate labels.
+
+## Why autoscaling is useful
+
+Cloud Run adds instances when demand increases and reduces them when demand falls. This provides more workers for busy periods without manually starting servers. Scaling down helps reduce idle resource use. Scaling is managed by Cloud Run, so a second request does not guarantee an immediate new instance.
+
+## My test configuration
+
+| Setting | Value | Meaning |
+|---|---|---|
+| Service | employee-api | API being tested |
+| Region | europe-west2 | Deployment region |
+| Minimum instances | 0 | Allows scaling to zero when idle; the next request may have a cold start |
+| Maximum instances | 2 | Configured scaling limit for this experiment, not a promise that two instances always run |
+| Concurrency | 1 | Each instance accepts at most one request at a time |
+| Billing | Request-based | Active resource billing applies during requests, startup and shutdown; idle minimum instances can also incur charges |
+| Test delay | 10 seconds | Keeps a request active long enough to overlap another request |
+
+Configuration values come from the Day 16 task record. The retrieved screenshots do not include the settings screen. Maximum instances helps manage capacity and cost; it is not an absolute spending cap.
+
+## Changes to the API
+
+I added a 10-second delay and logs before and after the delay. Hostname showed localhost, so it was not useful for distinguishing this test's instances. I used a UUID generated once when the application process starts.
+
+Illustrative code for the approach:
+
+```python
+import logging
+import time
+import uuid
+
+logger = logging.getLogger(__name__)
+INSTANCE_ID = str(uuid.uuid4())[:8]  # Once per process, outside the handler
+```
+
+Inside the existing synchronous endpoint:
+
+```python
+logger.info("Initial call before delay - instance=%s", INSTANCE_ID)
+time.sleep(10)
+logger.info("Request handled by instance=%s", INSTANCE_ID)
+```
+
+Continue with the existing response.
+
+---
+
+The same process keeps its ID across requests. A new process gets a new ID. This is an application process marker, not Cloud Run's official instance identifier. With one application process per container, different IDs distinguish running containers. Multiple worker processes inside one container would need additional verification. The delay is for the experiment and should be removed afterwards. For an async endpoint, use await asyncio.sleep(10) rather than blocking the event loop.
+
+## Build, push and deploy
+
+The screenshots show v8 in Artifact Registry, a successful push of v9, selection of v9, and deployment review changing the image digest from 21496739c7… to 4861916318…. The retrieved history does not show the exact v8 code or build command, so the precise code changes between tags are not confirmed.
+
+Repeatable command pattern used for this workflow (run from the folder containing the Dockerfile):
+
+```powershell
+docker build -t europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v9 .
+docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v9
+```
+
+For the earlier v8 build, use :v8 in both commands. Build creates the image locally. Push uploads it to Artifact Registry. Deploy tells Cloud Run which image to run.
+
+In Cloud Run, open employee-api, edit and deploy a new revision, select the new image, verify the scaling and billing settings, and deploy. The deployment review screenshot selected “Serve this revision immediately”, routing 100% of traffic to the new revision.
+
+## Browser test and what it taught me
+
+I refreshed two browser tabs to try to create parallel requests. The recorded requests were effectively sequential:
+
+```text
+Request 1: 10:40:16 → 10:40:26
+Request 2: 10:40:26 → 10:40:36
+Both used a3241268.
+```
+
+Two tabs can send concurrent requests, but manual refreshes do not guarantee overlap at the server. These logs do not establish the exact browser-side cause. Timing, navigation and browser behavior made this a less controlled test. Reusing an HTTP connection alone does not prove requests must run sequentially.
+
+## Controlled two-terminal test
+
+1. Open two separate PowerShell terminals.
+2. In terminal 1, run the command below.
+3. While terminal 1 is still waiting, immediately run the same command in terminal 2.
+4. Check Cloud Run logs for start and completion times and the instance IDs.
+
+```powershell
+curl.exe https://employee-api-972261256506.europe-west2.run.app/
+```
+
+Using curl.exe calls the actual curl program in PowerShell. Curl is not required for autoscaling; the useful part is deliberately making the requests overlap.
+
+## Final log evidence
+
+Times shown in the screenshot are 3 October 2026, BST.
+
+| Request | Instance | Start | Completed | Duration |
+|---|---|---|---|---|
+| 1 | `a3241268` | 10:48:21.895 | 10:48:31.896 | 10.001 seconds |
+| 2 | `6ea40b99` | 10:48:23.870 | 10:48:33.871 | 10.001 seconds |
+
+Request 2 started while request 1 was still running. The processing windows overlapped for about 8.026 seconds. Both requests returned HTTP 200. The screenshot also contains the application's demonstration INFO, WARNING and ERROR messages; those messages do not change the successful HTTP results.
+
+## Final result
+
+Day 16 is complete. The controlled test showed two overlapping requests handled by two different application process IDs, consistent with Cloud Run scaling out to two container instances under the single-process setup. The important point is the combination of different IDs and overlapping timestamps. Different IDs alone would not prove simultaneous processing.
+
+## Quick reminders
+
+- Concurrency is requests per instance, not the number of instances.
+- Maximum 2 does not keep 2 instances running all the time.
+- Minimum 0 allows scale-to-zero; minimum above 0 keeps capacity warm and can cost more.
+- Repeated requests can reuse the same running instance.
+- One image can start multiple instances.
+- Two browser tabs do not guarantee simultaneous server requests.
+
+## Stateless container
+
+A stateless container does not depend on data stored inside that particular container to correctly handle the next request.
+
+Example:
+
+```text
+Cloud Run
+|
++-- Instance A
+|
++-- Instance B
+```
+
+Assume our Employee API stores employees only in memory:
+
+```text
+employees = []
+
+Request 1:
+POST /employees
+-> Instance A
+-> employees = ["Raja"]
+
+Request 2:
+GET /employees
+-> Instance B
+-> employees = []
+```
+
+Instance B does not know what was stored in Instance A.
+
+This is a problem because Cloud Run can create, remove and replace instances depending on traffic.
+
+Better approach:
+
+```text
+Instance A ----\
+ -> Shared Database -> Employee: Raja
+Instance B ----/
+```
+
+Both instances read/write the same persistent data.
+
+### Simple definition
+
+**Stateless container:** A container should not rely on its own local memory or filesystem to preserve important application data between requests.
+
+Any container instance should be able to handle the next request. Persistent/shared data should be stored outside the container, such as in a database or storage service.
+
+### Key point
+
+Containers should be disposable. Cloud Run can create or remove instances, so important application state should not depend on one particular instance.
+
+## Sources
+
+Learning record: New_Learning_1 conversation and its seven retrieved screenshots. The Excel workbook embeds all seven, with the final logs first.
+
+Technical references: Autoscaling: https://docs.cloud.google.com/run/docs/about-instance-autoscaling, Concurrency: https://docs.cloud.google.com/run/docs/about-concurrency, Minimum instances: https://docs.cloud.google.com/run/docs/configuring/min-instances, Maximum instances: https://docs.cloud.google.com/run/docs/configuring/max-instances, Billing settings: https://docs.cloud.google.com/run/docs/configuring/billing-settings.

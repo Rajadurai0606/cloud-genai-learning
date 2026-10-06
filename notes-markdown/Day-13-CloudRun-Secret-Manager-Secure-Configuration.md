@@ -1,0 +1,116 @@
+# Day-13-CloudRun-Secret-Manager-Secure-Configuration
+Date: 30-Sep-2026
+
+## PROJECT: EMPLOYEE API
+
+Today we made the Employee API on Cloud Run receive a sensitive value
+```python
+from GCP Secret Manager. The deployment succeeded and the API returned
+"api_key_configured": true without showing the actual secret.
+```
+
+## WHAT I NEED TO REMEMBER
+
+Sensitive values include passwords, API keys and tokens.
+- Do not hardcode them in Python.
+- Do not commit them in a .env file or any other source file.
+- Do not copy them into a Docker image.
+
+A local .env file can be used for development if it stays private and out
+of Git and Docker builds. For today's Cloud Run setup, Secret Manager
+stores the sensitive value.
+
+## HOW IT WORKS IN OUR PROJECT
+
+## 1. GCP Secret Manager stores the secret named EMPLOYEE_API_KEY.
+## 2. Cloud Run references version 1 of that secret.
+## 3. Cloud Run exposes its value to the container as API_KEY.
+## 4. Python reads the environment variable:
+
+```python
+import os
+api_key = os.getenv('API_KEY')
+```
+
+EMPLOYEE_API_KEY is the secret's name in GCP.
+API_KEY is the environment variable name our Python code reads.
+These are names, not the sensitive value itself.
+
+## Secret Manager -> Cloud Run environment variable API_KEY -> Python
+
+## JUST ENOUGH IAM FOR TODAY
+
+IAM = who can do what in GCP.
+Service account = the application's identity in GCP.
+Secret Manager Secret Accessor = permission to read a secret's value.
+
+For our project:
+- Who? The service account running the Cloud Run application.
+- Do what? Read EMPLOYEE_API_KEY.
+- Permission? Secret Manager Secret Accessor.
+
+You do not need to memorize the service account address or IAM commands.
+Creating a secret and allowing an application to read it are separate steps.
+
+## THE PERMISSION ERROR AND FIX
+
+The Cloud Run secret reference was configured, but creating the revision
+failed with "Permission denied on secret" for EMPLOYEE_API_KEY version 1.
+Routing traffic was cancelled. The error requested the Secret Manager
+Secret Accessor role for the revision's service account.
+
+Why: the application's identity did not yet have permission to read it.
+
+Fix recorded in the conversation: grant that service account Secret
+Manager Secret Accessor, allow time for the permission to take effect,
+then deploy a new revision using the same secret reference.
+
+After retrying, updating the service, creating the revision and routing
+traffic all completed successfully.
+
+## FINAL RESULT
+
+```json
+{
+  "message": "Employee API",
+  "version": "3.0",
+  "environment": "staging",
+  "api_key_configured": true
+}
+```
+
+The flag reports that the application has its API key configured. It does
+not display the key or test whether an external service accepts the key.
+
+## TROUBLESHOOTING / REFERENCE - NO MEMORIZATION REQUIRED
+
+Service: employee-api
+Project: cloud-genai-learning
+Region: europe-west2
+Secret reference: API_KEY -> EMPLOYEE_API_KEY -> version 1
+Runtime service account:
+972261256506-compute@developer.gserviceaccount.com
+Role identifier: roles/secretmanager.secretAccessor
+
+If this permission error appears again, check the service's runtime
+identity, its permission to read the secret, and the configured version.
+An old failed revision can remain visible until a new deployment is tried.
+
+The exact shell commands used earlier were not included in the accessible
+conversation. No reconstructed commands are presented as executed steps.
+
+## HOW TO ORGANIZE FUTURE NOTES
+
+Keep one notes file per learning day/topic, using Day-NN-Topic filenames.
+Keep a matching screenshot workbook when screenshots explain a useful
+configuration, error or result. Avoid recording every click.
+
+## SOURCE AND SCREENSHOT COVERAGE
+
+Source: New_Learning_1 conversation and its accessible image attachments.
+https://chatgpt.com/c/6aa66e73-10d4-83ed-b1d2-0f0f2ca78540
+
+The companion workbook contains three original screenshots covering the
+secret mapping and failed revision, successful deployment, and API result.
+Separate Secret Manager/version and IAM grant screenshots were unavailable.
+The permission fix is recorded from the conversation, not an IAM screenshot.

@@ -1,0 +1,158 @@
+# NOTES INDEX
+
+## Employee API learning journey - Days 01 to 13
+
+## HOW TO USE THIS FOLDER
+
+Open a Day-NN file to revisit that lesson. Each filename includes its main
+topic. Days 01 to 12 retain the original explanations, code and commands
+under ORIGINAL LEARNING NOTES, with a new concept list at the top.
+Day 13 is the separate note prepared in this chat.
+
+Keep one file per day and use headings inside it for individual concepts.
+Use the concept finder below when you remember a topic but not the day.
+For future lessons, use Day-14-Topic-Name.txt, Day-15-Topic-Name.txt, etc.
+
+## DATES AND SOURCE
+
+Day 1 is an inferred label for the opening undated section. Days 2 to 12
+use the date separators in the original Notes.txt. Learning days are session
+numbers, so gaps between calendar dates are expected.
+
+These are learning records of the project at each stage. Earlier examples
+may use older image names, ports or responses. Existing labels distinguishing
+recorded commands from reconstructed reference commands are preserved.
+
+The original Notes.txt was read only and is unchanged. Text inside the old
+notes such as "Append this section" remains historical text, not a new action.
+
+## DAY AND TOPIC DIRECTORY
+
+DAY 01 | Not recorded in the source
+File: [Day-01-Python-FastAPI-Foundations.md](Day-01-Python-FastAPI-Foundations.md)
+Concepts: venv; pip; requirements.txt; Python functions and type hints; classes; FastAPI routes; Uvicorn; Swagger
+
+DAY 02 | 14-Sep-2026
+File: [Day-02-POST-Pydantic-Validation.md](Day-02-POST-Pydantic-Validation.md)
+Concepts: BaseModel; Field constraints; optional fields; request bodies; 422 errors; model_dump; model_dump_json
+
+DAY 03 | 15-Sep-2026
+File: [Day-03-GET-Employees-HTTP-Status-Codes.md](Day-03-GET-Employees-HTTP-Status-Codes.md)
+Concepts: Python lists; path parameters; employee lookup; HTTPException; 200, 201, 404 and 409; in-memory storage
+
+DAY 04 | 16-Sep-2026
+File: [Day-04-Employee-CRUD-Models-ID-Generation.md](Day-04-Employee-CRUD-Models-ID-Generation.md)
+Concepts: PUT; DELETE; EmployeeBase and EmployeeModel; generated IDs; 204 responses; completed CRUD endpoints
+
+DAY 05 | 17-Sep-2026
+File: [Day-05-Project-Structure-Modules-Routers.md](Day-05-Project-Structure-Modules-Routers.md)
+Concepts: Modules; packages; __init__.py; relative imports; import errors; APIRouter; Uvicorn module path
+
+DAY 06 | 19-Sep-2026
+File: [Day-06-Automated-API-Testing-pytest.md](Day-06-Automated-API-Testing-pytest.md)
+Concepts: pytest; TestClient; HTTPX; Arrange Act Assert; generated IDs in tests; response assertions; test isolation limitation
+
+DAY 07 | 21-Sep-2026
+File: [Day-07-Dockerfile-Images-Containers.md](Day-07-Dockerfile-Images-Containers.md)
+Concepts: Dockerfile instructions; build context; .dockerignore; image versus container; port mapping; 0.0.0.0; image layers; slim image
+
+DAY 08 | 22-Sep-2026
+File: [Day-08-Docker-Lifecycle-Layer-Caching.md](Day-08-Docker-Lifecycle-Layer-Caching.md)
+Concepts: run; start; stop; rm; ps; container names; host and container ports; dependency layer caching; image size
+
+DAY 09 | 24-Sep-2026
+File: [Day-09-GCP-Fundamentals-Configurable-Port.md](Day-09-GCP-Fundamentals-Configurable-Port.md)
+Concepts: Projects; regions; zones; Artifact Registry; Cloud Run; GKE; PORT; os.getenv; module startup; --env-file; port debugging
+
+DAY 10 | 27-Sep-2026
+File: [Day-10-CloudRun-Artifact-Registry-Deployment.md](Day-10-CloudRun-Artifact-Registry-Deployment.md)
+Concepts: gcloud; registry authentication; push; tags and digests; Cloud Run setup; scaling; ingress; ports; logs; revisions
+
+DAY 11 | 28-Sep-2026
+File: [Day-11-CloudRun-Revisions-Traffic-Rollback.md](Day-11-CloudRun-Revisions-Traffic-Rollback.md)
+Concepts: build versus tag versus push; service versus revision; v1 and v2; traffic percentages; rollback; restore; reference commands
+
+DAY 12 | 29-Sep-2026
+File: [Day-12-Environment-Variables-CloudRun-Configuration.md](Day-12-Environment-Variables-CloudRun-Configuration.md)
+Concepts: PowerShell environment; os.getenv; Docker -e; --env-file; same image with different settings; staging; configuration revisions
+
+DAY 13 | 30-Sep-2026
+File: [Day-13-CloudRun-Secret-Manager-Secure-Configuration.md](Day-13-CloudRun-Secret-Manager-Secure-Configuration.md)
+Concepts: Secret Manager; API_KEY; service account; IAM; Secret Manager Secret Accessor; permission error and fix
+
+## CONCEPT FINDER
+
+Python setup, venv, pip and dependencies
+Days: 01
+
+Functions, type hints and classes
+Days: 01
+
+FastAPI endpoints and Swagger
+Days: 01, 02, 03, 04
+
+Pydantic models and validation
+Days: 02, 04
+
+HTTP methods, status codes and errors
+Days: 02, 03, 04
+
+In-memory employee storage and IDs
+Days: 03, 04
+
+Modules, packages, relative imports and routers
+Days: 05
+
+Automated testing and TestClient
+Days: 06
+
+Dockerfile, build context and .dockerignore
+Days: 07
+
+Docker images, containers and lifecycle
+Days: 07, 08
+
+Docker build caching and slim images
+Days: 07, 08
+
+Ports, 0.0.0.0 and Docker port mapping
+Days: 07, 08, 09, 10, 12
+
+GCP projects, regions, zones and GKE
+Days: 09
+
+Artifact Registry, authentication, tags and push
+Days: 10, 11, 12
+
+Cloud Run deployment, scaling and logs
+Days: 10
+
+Cloud Run revisions, traffic and rollback
+Days: 11, 12
+
+Environment variables, .env and os.getenv
+Days: 09, 12, 13
+
+Secret Manager, IAM and service accounts
+Days: 13
+
+Secret permission error and successful retry
+Days: 13
+
+## Complete Markdown collection
+
+- [Day-01-Python-FastAPI-Foundations](Day-01-Python-FastAPI-Foundations.md)
+- [Day-02-POST-Pydantic-Validation](Day-02-POST-Pydantic-Validation.md)
+- [Day-03-GET-Employees-HTTP-Status-Codes](Day-03-GET-Employees-HTTP-Status-Codes.md)
+- [Day-04-Employee-CRUD-Models-ID-Generation](Day-04-Employee-CRUD-Models-ID-Generation.md)
+- [Day-05-Project-Structure-Modules-Routers](Day-05-Project-Structure-Modules-Routers.md)
+- [Day-06-Automated-API-Testing-pytest](Day-06-Automated-API-Testing-pytest.md)
+- [Day-07-Dockerfile-Images-Containers](Day-07-Dockerfile-Images-Containers.md)
+- [Day-08-Docker-Lifecycle-Layer-Caching](Day-08-Docker-Lifecycle-Layer-Caching.md)
+- [Day-09-GCP-Fundamentals-Configurable-Port](Day-09-GCP-Fundamentals-Configurable-Port.md)
+- [Day-10-CloudRun-Artifact-Registry-Deployment](Day-10-CloudRun-Artifact-Registry-Deployment.md)
+- [Day-11-CloudRun-Revisions-Traffic-Rollback](Day-11-CloudRun-Revisions-Traffic-Rollback.md)
+- [Day-12-Environment-Variables-CloudRun-Configuration](Day-12-Environment-Variables-CloudRun-Configuration.md)
+- [Day-13-CloudRun-Secret-Manager-Secure-Configuration](Day-13-CloudRun-Secret-Manager-Secure-Configuration.md)
+- [Day-14-CloudRun-Logging-Observability](Day-14-CloudRun-Logging-Observability.md)
+- [Day-15-CloudRun-Health-Checks-Startup-Probes](Day-15-CloudRun-Health-Checks-Startup-Probes.md)
