@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 @router.get("/")
 def root():
-    logger.info(f"Initial call before delay - instance={INSTANCE_ID}")
-    time.sleep(10) #10 sec delay
-    logger.info(f"Request handled by instance={INSTANCE_ID}")
+    #logger.info(f"Initial call before delay - instance={INSTANCE_ID}")
+    #time.sleep(10) #10 sec delay
+    #logger.info(f"Request handled by instance={INSTANCE_ID}")
     logger.info(
         "Landing enpoint called version=%s, environment=%s",
         os.getenv("APP_VERSION","local"),
