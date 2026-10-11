@@ -1,7 +1,9 @@
 # Day 01 - Python and FastAPI foundations
+
 Date: Not recorded in the source
 
 ## Concepts in this file
+
 - venv
 - pip
 - requirements.txt
@@ -69,21 +71,21 @@ def get_message(name: str) -> str:
     return f"Hello {name}"
 ```
 
-## Python                          C#
+## Python C#
 
-## def                             method/function declaration
+## def method/function declaration
 
-## name: str                       string name
+## name: str string name
 
 ```text
 -> str                          return type hint: string
 ```
 
-f"Hello {name}"                 $"Hello {name}"
+f"Hello {name}" $"Hello {name}"
 
-## :                               starts the function/class block
+## : starts the function/class block
 
-## Indentation                     defines the code block
+## Indentation defines the code block
 
 ## Other examples:
 
@@ -104,7 +106,7 @@ class Employee:
         self.salary = salary
 ```
 
-__init__ is similar to a constructor in C#.
+**init** is similar to a constructor in C#.
 
 self is similar to "this" in C#.
 
@@ -199,3 +201,5 @@ http://127.0.0.1:8000/docs
 - see HTTP methods such as GET
 - execute/test the API
 - see request and response details
+
+# Updated formatting
