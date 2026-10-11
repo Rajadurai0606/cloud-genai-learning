@@ -1,7 +1,9 @@
 # Day 04 - Employee CRUD models and ID generation
+
 Date: 16-Sep-2026
 
 ## Concepts in this file
+
 - PUT
 - DELETE
 - EmployeeBase and EmployeeModel
@@ -38,7 +40,7 @@ EmployeeModel(EmployeeBase)
 Inherits EmployeeBase and adds id.
 
 This avoids accepting different employee IDs from:
-URL:  /employees/1
+URL: /employees/1
 Body: id = 2
 
 ## ID Generation
@@ -70,8 +72,8 @@ Using 204 No Content when successful.
 
 ## CRUD completed:
 
-POST    /employees
-GET     /employees
-GET     /employees/{id}
-PUT     /employees/{id}
-DELETE  /employees/{id}
+POST /employees
+GET /employees
+GET /employees/{id}
+PUT /employees/{id}
+DELETE /employees/{id}
