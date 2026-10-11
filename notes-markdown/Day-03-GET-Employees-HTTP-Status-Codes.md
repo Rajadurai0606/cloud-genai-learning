@@ -1,7 +1,9 @@
 # Day 03 - GET employees and HTTP status codes
+
 Date: 15-Sep-2026
 
 ## Concepts in this file
+
 - Python lists
 - path parameters
 - employee lookup
@@ -37,6 +39,7 @@ The employee id from the URL is passed to the Python function.
 Loop through the employee list and compare employee id.
 
 If employee exists:
+
 ```python
 return Employee
 ```
