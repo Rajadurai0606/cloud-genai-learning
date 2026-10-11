@@ -16,15 +16,15 @@ Cloud Run adds instances when demand increases and reduces them when demand fall
 
 ## My test configuration
 
-| Setting | Value | Meaning |
-|---|---|---|
-| Service | employee-api | API being tested |
-| Region | europe-west2 | Deployment region |
-| Minimum instances | 0 | Allows scaling to zero when idle; the next request may have a cold start |
-| Maximum instances | 2 | Configured scaling limit for this experiment, not a promise that two instances always run |
-| Concurrency | 1 | Each instance accepts at most one request at a time |
-| Billing | Request-based | Active resource billing applies during requests, startup and shutdown; idle minimum instances can also incur charges |
-| Test delay | 10 seconds | Keeps a request active long enough to overlap another request |
+| Setting           | Value         | Meaning                                                                                                              |
+| ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Service           | employee-api  | API being tested                                                                                                     |
+| Region            | europe-west2  | Deployment region                                                                                                    |
+| Minimum instances | 0             | Allows scaling to zero when idle; the next request may have a cold start                                             |
+| Maximum instances | 2             | Configured scaling limit for this experiment, not a promise that two instances always run                            |
+| Concurrency       | 1             | Each instance accepts at most one request at a time                                                                  |
+| Billing           | Request-based | Active resource billing applies during requests, startup and shutdown; idle minimum instances can also incur charges |
+| Test delay        | 10 seconds    | Keeps a request active long enough to overlap another request                                                        |
 
 Configuration values come from the Day 16 task record. The retrieved screenshots do not include the settings screen. Maximum instances helps manage capacity and cost; it is not an absolute spending cap.
 
@@ -101,10 +101,10 @@ Using curl.exe calls the actual curl program in PowerShell. Curl is not required
 
 Times shown in the screenshot are 3 October 2026, BST.
 
-| Request | Instance | Start | Completed | Duration |
-|---|---|---|---|---|
-| 1 | `a3241268` | 10:48:21.895 | 10:48:31.896 | 10.001 seconds |
-| 2 | `6ea40b99` | 10:48:23.870 | 10:48:33.871 | 10.001 seconds |
+| Request | Instance   | Start        | Completed    | Duration       |
+| ------- | ---------- | ------------ | ------------ | -------------- |
+| 1       | `a3241268` | 10:48:21.895 | 10:48:31.896 | 10.001 seconds |
+| 2       | `6ea40b99` | 10:48:23.870 | 10:48:33.871 | 10.001 seconds |
 
 Request 2 started while request 1 was still running. The processing windows overlapped for about 8.026 seconds. Both requests returned HTTP 200. The screenshot also contains the application's demonstration INFO, WARNING and ERROR messages; those messages do not change the successful HTTP results.
 
