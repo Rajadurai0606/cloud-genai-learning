@@ -1,7 +1,9 @@
 # Day 06 - Automated API testing with pytest
+
 Date: 19-Sep-2026
 
 ## Concepts in this file
+
 - pytest
 - TestClient
 - HTTPX
@@ -17,13 +19,15 @@ Date: 19-Sep-2026
 ```powershell
 pytest
 ```
+
 Python testing framework used to automatically discover and run tests.
 
 Naming convention:
-Test files   -> test_*.py
-Test methods -> test_*
+Test files -> test*\*.py
+Test methods -> test*\*
 
 Run tests from project root:
+
 ```powershell
 py -m pytest -v
 ```
@@ -44,6 +48,7 @@ Normal execution:
 Browser/Swagger -> Uvicorn -> FastAPI -> Endpoint
 
 Automated test:
+
 ```powershell
 pytest -> TestClient -> FastAPI -> Endpoint
 ```
@@ -59,20 +64,20 @@ FastAPI/Starlette TestClient is based on HTTPX, which provides
 the underlying HTTP client functionality.
 
 Simple understanding:
-Uvicorn    -> Server
-HTTPX      -> HTTP client library
+Uvicorn -> Server
+HTTPX -> HTTP client library
 TestClient -> Client used to test our FastAPI application
 
 HTTPX and HTTP/2 are different:
-HTTPX  -> Python library
+HTTPX -> Python library
 HTTP/2 -> Version of HTTP protocol
 
 HTTP/2 is not required for our current learning.
 
 Basic Test Approach
 Arrange -> prepare test data
-Act     -> invoke API
-Assert  -> verify expected result
+Act -> invoke API
+Assert -> verify expected result
 
 ```text
 What we tested
@@ -118,13 +123,13 @@ DELETE /employees/{id}
 ## Important Testing Learnings
 
 1. Do not hard-code generated IDs in tests.
-Capture the ID returned by POST and use it for later requests.
+   Capture the ID returned by POST and use it for later requests.
 
 2. Tests should create/control the data they depend on rather than
-assuming an employee already exists.
+   assuming an employee already exists.
 
 3. Do not validate only the HTTP status code when behaviour also
-matters.
+   matters.
 
 Example:
 DELETE -> 204
@@ -133,7 +138,7 @@ GET same employee -> 404
 This confirms the employee was actually deleted.
 
 4. Automated tests give repeatable verification and reduce the need
-to manually test every scenario through Swagger.
+   to manually test every scenario through Swagger.
 
 Current Limitation
 Tests currently share the application's in-memory employee data,
