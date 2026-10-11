@@ -1,7 +1,9 @@
 # Day 09 - GCP fundamentals and configurable port
+
 Date: 24-Sep-2026
 
 ## Concepts in this file
+
 - Projects
 - regions
 - zones
@@ -61,7 +63,7 @@ CMD ["python", "-m", "app.main"]
 
 - -m runs app.main as a Python module, allowing its relative imports to work.
 - Use app.main, without the .py extension.
-- The __main__ guard starts Uvicorn only when the module is executed as the entry point.
+- The **main** guard starts Uvicorn only when the module is executed as the entry point.
 - When Uvicorn imports app.main, the guarded startup block does not run again.
 
 ## Application Port versus Docker Port Mapping
@@ -76,6 +78,7 @@ PORT environment variable
 ```powershell
 -p HOST_PORT:CONTAINER_PORT
 ```
+
 ```text
 → Docker forwards host traffic to a container port.
 ```
@@ -130,20 +133,20 @@ docker run --name cn-employee-api-1 --env-file .env -p 8080:5000 im-employee-api
 ## Recall Questions
 
 1. Why use Artifact Registry?
-To make built images available beyond our laptop for deployment.
+   To make built images available beyond our laptop for deployment.
 
 2. Artifact Registry versus Cloud Run?
-Artifact Registry stores images; Cloud Run runs applications from them.
+   Artifact Registry stores images; Cloud Run runs applications from them.
 
 3. Cloud Run versus GKE?
-Cloud Run handles infrastructure for us. GKE provides Kubernetes features and more control.
+   Cloud Run handles infrastructure for us. GKE provides Kubernetes features and more control.
 
 4. Why environment variables?
-To change runtime configuration while reusing the same application image.
+   To change runtime configuration while reusing the same application image.
 
 5. What does -p 8001:8080 mean?
-Forward host port 8001 to container port 8080.
-The application must already be listening on container port 8080.
+   Forward host port 8001 to container port 8080.
+   The application must already be listening on container port 8080.
 
 Day 9 completed: GCP fundamentals reviewed, configurable PORT implemented,
 and default and overridden port tests passed locally.
