@@ -1,7 +1,9 @@
 # Day 07 - Dockerfile images and containers
+
 Date: 21-Sep-2026
 
 ## Concepts in this file
+
 - Dockerfile instructions
 - build context
 - .dockerignore
@@ -76,6 +78,7 @@ docker build -t my-fastapi .
 
 docker build
 ```
+
 Builds a Docker image.
 
 -t my-fastapi
@@ -100,8 +103,8 @@ We excluded unnecessary local files such as:
 
 .venv
 venv
-__pycache__
-*.pyc
+**pycache**
+\*.pyc
 .pytest_cache
 Notes.txt
 README.md
@@ -186,21 +189,25 @@ Check Docker installation.
 ```powershell
 docker build -t my-fastapi .
 ```
+
 Build image.
 
 ```powershell
 docker images
 ```
+
 List local images.
 
 ```powershell
 docker run -p 8000:8000 my-fastapi
 ```
+
 Create and run container.
 
 ```powershell
 docker image history my-fastapi
 ```
+
 View image build/layer history.
 
 ## Important Learning
