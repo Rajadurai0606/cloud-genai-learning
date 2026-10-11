@@ -1,7 +1,9 @@
 # Day 10 - Cloud Run and Artifact Registry deployment
+
 Date: 27-Sep-2026
 
 ## Concepts in this file
+
 - gcloud
 - registry authentication
 - push
@@ -51,6 +53,7 @@ cloud-genai-learning
 A GCP Project is the main logical container for our cloud resources.
 
 Resources such as:
+
 - Artifact Registry
 - Cloud Run
 - APIs
@@ -76,6 +79,7 @@ gcloud init
 ```
 
 During initialization:
+
 - Signed in using Google account
 - Selected project:
 
@@ -88,6 +92,7 @@ gcloud config list
 ```
 
 This shows the active:
+
 - account
 - project
 - configuration
@@ -177,6 +182,7 @@ identifies the exact immutable image content.
 Cloud Run is a fully managed service for running containers.
 
 Instead of manually creating:
+
 - VM
 - Kubernetes cluster
 - Pods
@@ -252,6 +258,7 @@ Free-tier allowances do NOT mean that every GCP resource is
 guaranteed to cost £0.
 
 Always:
+
 - keep learning resources small
 - configure sensible scaling limits
 - monitor billing
@@ -264,6 +271,7 @@ Always:
 All
 
 This allows requests to reach the Cloud Run service directly
+
 ```python
 from the internet.
 ```
@@ -350,7 +358,7 @@ PORT=8080
 
 ## Configured:
 
-CPU    = 1
+CPU = 1
 Memory = 512 MiB
 
 These resources are sufficient for the small FastAPI
@@ -423,6 +431,7 @@ of the Cloud Run service.
 Future deployments can create new revisions.
 
 This allows Cloud Run to support:
+
 - deployment history
 - traffic splitting
 - rollback to previous revisions
@@ -450,13 +459,13 @@ inside Cloud Run.
 
 ## Swagger showed:
 
-GET     /
-GET     /health
-GET     /employees
-POST    /employees
-GET     /employees/{id}
-PUT     /employees/{id}
-DELETE  /employees/{id}
+GET /
+GET /health
+GET /employees
+POST /employees
+GET /employees/{id}
+PUT /employees/{id}
+DELETE /employees/{id}
 
 This confirmed that the complete FastAPI application was
 running in GCP, not just the root endpoint.
