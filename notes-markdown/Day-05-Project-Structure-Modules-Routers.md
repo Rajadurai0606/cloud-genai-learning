@@ -1,10 +1,12 @@
 # Day 05 - Project structure modules and routers
+
 Date: 17-Sep-2026
 
 ## Concepts in this file
+
 - Modules
 - packages
-- __init__.py
+- **init**.py
 - relative imports
 - import errors
 - APIRouter
@@ -37,25 +39,25 @@ app/
 main.py
 
 models/
-__init__.py
+**init**.py
 employee.py
 
 routers/
-__init__.py
+**init**.py
 employee.py
 health.py
 land.py
 
-## __init__.py
+## **init**.py
 
-__init__.py is the package initialization file.
+**init**.py is the package initialization file.
 
-For the current project, keep __init__.py empty.
+For the current project, keep **init**.py empty.
 
 It can later be used for package initialization or to expose
 selected objects from the package, but this is not required now.
 
-Modern Python also supports some packages without __init__.py,
+Modern Python also supports some packages without **init**.py,
 but we do not need that concept for the current project.
 
 ## Relative Imports
@@ -88,7 +90,7 @@ app -> models -> employee.py
 
 ## Import Error Learned
 
-Initially __init__.py contained:
+Initially **init**.py contained:
 
 ```python
 from employee import *
@@ -98,7 +100,7 @@ Python tried to find a top-level module named employee and raised:
 
 ModuleNotFoundError: No module named 'employee'
 
-The wildcard imports were not required, so __init__.py files
+The wildcard imports were not required, so **init**.py files
 were left empty.
 
 ## APIRouter
@@ -124,14 +126,15 @@ uvicorn app.main:app --reload
 
 Meaning:
 
-app       -> Python package
-main      -> main.py module
-app       -> FastAPI object created inside main.py
---reload  -> restart development server when code changes
+app -> Python package
+main -> main.py module
+app -> FastAPI object created inside main.py
+--reload -> restart development server when code changes
 
 ## Result
 
 FastAPI application is now separated into:
+
 - application startup/configuration
 - routers/endpoints
 - Pydantic models
