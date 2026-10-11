@@ -1,9 +1,11 @@
 # Day-13-CloudRun-Secret-Manager-Secure-Configuration
+
 Date: 30-Sep-2026
 
 ## PROJECT: EMPLOYEE API
 
 Today we made the Employee API on Cloud Run receive a sensitive value
+
 ```python
 from GCP Secret Manager. The deployment succeeded and the API returned
 "api_key_configured": true without showing the actual secret.
@@ -12,6 +14,7 @@ from GCP Secret Manager. The deployment succeeded and the API returned
 ## WHAT I NEED TO REMEMBER
 
 Sensitive values include passwords, API keys and tokens.
+
 - Do not hardcode them in Python.
 - Do not commit them in a .env file or any other source file.
 - Do not copy them into a Docker image.
@@ -23,8 +26,11 @@ stores the sensitive value.
 ## HOW IT WORKS IN OUR PROJECT
 
 ## 1. GCP Secret Manager stores the secret named EMPLOYEE_API_KEY.
+
 ## 2. Cloud Run references version 1 of that secret.
+
 ## 3. Cloud Run exposes its value to the container as API_KEY.
+
 ## 4. Python reads the environment variable:
 
 ```python
@@ -45,6 +51,7 @@ Service account = the application's identity in GCP.
 Secret Manager Secret Accessor = permission to read a secret's value.
 
 For our project:
+
 - Who? The service account running the Cloud Run application.
 - Do what? Read EMPLOYEE_API_KEY.
 - Permission? Secret Manager Secret Accessor.
