@@ -1,7 +1,9 @@
 # Day 11 - Cloud Run revisions traffic and rollback
+
 Date: 28-Sep-2026
 
 ## Concepts in this file
+
 - build versus tag versus push
 - service versus revision
 - v1 and v2
@@ -73,6 +75,7 @@ image path established in Day 10, with the v2 tag. The earlier Day-11 transcript
 is needed to confirm that these are exactly the command lines used that day.
 
 Before starting
+
 - Have Docker Desktop running.
 - Open the terminal in 01-python-fastapi, where the Dockerfile is located.
 - Use the existing cloud-genai-learning project and employee-api repository.
@@ -89,10 +92,11 @@ docker build -t employee-api:v2 .
 ```
 
 Easy explanation:
+
 - docker build = build an image using the Dockerfile.
 - -t employee-api:v2 = give the image the name employee-api and tag v2.
 - The final dot means use this folder as the build context (the files Docker
-can use for the build).
+  can use for the build).
 - The result is a local image. It has not been uploaded to GCP yet.
 
 ## 2. Give that same image its registry destination name
@@ -102,6 +106,7 @@ docker tag employee-api:v2 europe-west2-docker.pkg.dev/cloud-genai-learning/empl
 ```
 
 Easy explanation:
+
 - The first name is the image we already built on the laptop.
 - The second name is another name pointing to that SAME image.
 - Docker tag does not copy the image or build another image.
@@ -112,7 +117,7 @@ Easy explanation:
 ## Reading the longer name:
 
 europe-west2-docker.pkg.dev / cloud-genai-learning / employee-api / employee-api : v2
-Registry host                GCP project            Repository     Image name     Tag
+Registry host GCP project Repository Image name Tag
 
 The two employee-api parts have different jobs: the first is the repository
 (the storage location), and the second is the image name inside it.
@@ -124,19 +129,20 @@ docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employ
 ```
 
 Easy explanation:
+
 - Push uses the full destination name we added in step 2.
 - It uploads the image content needed by that registry.
 - Docker may say a layer already exists if it does not need to upload it again.
 - Wait for successful completion and the image digest in the output.
 - The image is now available in Artifact Registry for Cloud Run to deploy.
 - Push does not automatically deploy a new Cloud Run revision. Deployment is
-the next, separate step.
+  the next, separate step.
 
 ## Quick reminder
 
 Build = create the local image.
-Tag   = add another name/address pointing to the same local image.
-Push  = upload the image to the registry using that address.
+Tag = add another name/address pointing to the same local image.
+Push = upload the image to the registry using that address.
 
 ## Alternative: build with the full destination name from the start
 
@@ -158,21 +164,25 @@ of commands executed on Day 11. Nothing was executed against GCP to prepare
 these learning artifacts.
 
 Check configured project
+
 ```powershell
 gcloud config get-value project
 ```
 
 Configure Docker authentication for the registry host (if needed)
+
 ```powershell
 gcloud auth configure-docker europe-west2-docker.pkg.dev
 ```
 
 List uploaded images and tags
+
 ```powershell
 gcloud artifacts docker images list europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api --include-tags
 ```
 
 Inspect the Cloud Run service
+
 ```powershell
 gcloud run services describe employee-api --region=europe-west2 --project=cloud-genai-learning
 ```
@@ -181,6 +191,7 @@ Check the public root response
 curl.exe -i https://employee-api-972261256506.europe-west2.run.app/
 
 Read recent service logs
+
 ```powershell
 gcloud run services logs read employee-api --region=europe-west2 --project=cloud-genai-learning --limit=50
 ```
@@ -188,6 +199,7 @@ gcloud run services logs read employee-api --region=europe-west2 --project=cloud
 ## Learned
 
 Docker build
+
 - Builds an image from the application and Dockerfile.
 - Code changes on the laptop do not change a previously built image.
 - The Day-11 summary identifies the new local image as employee-api:v2.
@@ -199,6 +211,7 @@ that can be used by a later docker push. docker tag itself does not upload the i
 ```powershell
 docker tag employee-api:v2 europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:v2
 ```
+
 employee-api:v2 - Source (from docker)
 europe-west2-docker.pkg.dev - Registry host
 cloud-genai-learning - Project
@@ -208,6 +221,7 @@ employee-api : v2 - employee-api - Image, v2 - Tag
 ```powershell
 docker tag creates another reference to the same image. How we name that reference matters, because a registry-qualified reference
 ```
+
 contains the destination information that docker push will later use.
 
 - Adds another reference/name pointing to the same image; it does not copy it.
@@ -217,25 +231,28 @@ contains the destination information that docker push will later use.
 - A tag is a label. A digest identifies the exact image content.
 
 Docker push and Artifact Registry
+
 - Push uploads the named image to the registry.
 - Artifact Registry stores images so Cloud Run can use them.
 - Established repository: employee-api, Docker format, europe-west2.
 - Registry repository path:
-europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api
+  europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api
 - Repository name and image name are separate parts of an image reference.
 - A successful push alone does not update an existing Cloud Run revision.
 - The reference commands above use :v2; yesterday's recorded push used :latest.
 
 Cloud Run service and revisions
+
 - employee-api is the service and keeps the same public URL.
 - A revision is an immutable version of the service's container/configuration.
 - Deploying v2 created employee-api-00002-pxz; v1 was still present.
 - Revision History shows both revisions and the traffic each receives.
 - The screenshot shows Updating service, Creating revision and Routing traffic
-all completed for the v2 deployment.
+  all completed for the v2 deployment.
 - One chat reply says 00002-nxz. The screenshots show 00002-pxz, used here.
 
 Traffic management
+
 - Traffic settings decide which revision handles requests to the service URL.
 - A revision can exist with 0% of service traffic.
 - In this exercise, one revision received 100% at a time.
@@ -244,11 +261,17 @@ Traffic management
 Rollback exercise (Cloud Console actions used)
 
 ## 1. Open Cloud Run > employee-api > Revision History.
+
 ## 2. Click Manage traffic.
+
 ## 3. Choose Send all traffic to one revision.
+
 ## 4. Select employee-api-00001-w6s (v1).
+
 ## 5. Click Save.
+
 ## 6. Open the same public URL.
+
 ## 7. Verify the response is "hello Raja".
 
 The selection screenshot is before Save. The next browser screenshot confirms
@@ -258,10 +281,15 @@ needed for this traffic change. The v2 revision was retained.
 Restore v2 (recorded follow-up)
 
 ## 1. Go back to Manage traffic.
+
 ## 2. Choose Send all traffic to one revision.
+
 ## 3. Select employee-api-00002-pxz (v2), then Save.
+
 ## 4. Verify completed traffic migration and v2 100%, v1 0%.
+
 ## 5. Open the same URL and verify:
+
 {"message":"Employee API","version":"2.0"}
 
 The returned chat instructs the single-revision option above. The final
@@ -279,9 +307,9 @@ v1              v2
 00001-w6s       00002-pxz
 ```
 
-After deployment: v1 0%,   v2 100%
-During rollback:  v1 100%, v2 0% (old response verified)
-Final state:      v1 0%,   v2 100%
+After deployment: v1 0%, v2 100%
+During rollback: v1 100%, v2 0% (old response verified)
+Final state: v1 0%, v2 100%
 
 Changing traffic selects an existing revision. It does not change its code.
 Rebuilding an image, pushing an image and routing traffic are separate actions.
