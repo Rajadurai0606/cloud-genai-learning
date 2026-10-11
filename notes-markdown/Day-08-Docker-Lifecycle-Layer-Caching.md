@@ -1,7 +1,9 @@
 # Day 08 - Docker container lifecycle and layer caching
+
 Date: 22-Sep-2026
 
 ## Concepts in this file
+
 - run
 - start
 - stop
@@ -37,7 +39,7 @@ Dockerfile
 One image can be used to create multiple independent containers.
 
 Simple analogy:
-Class  -> Image
+Class -> Image
 Object -> Container
 
 This is only an analogy to help remember the concept.
@@ -47,27 +49,32 @@ This is only an analogy to help remember the concept.
 ```powershell
 docker build
 ```
+
 Creates an image from the Dockerfile.
 
 ```powershell
 docker run
 ```
+
 Creates a new container from an image and starts it.
 
 ```powershell
 docker stop
 ```
+
 Stops a running container.
 The container still exists.
 
 ```powershell
 docker start
 ```
+
 Starts an existing stopped container.
 
 ```powershell
 docker rm
 ```
+
 Removes the container.
 
 Removing a container does NOT remove its image.
@@ -79,31 +86,37 @@ The same image can be used again to create another new container.
 ```powershell
 docker ps
 ```
+
 Shows only running containers.
 
 ```powershell
 docker ps -a
 ```
+
 Shows all containers, including stopped containers.
 
 ```powershell
 docker stop <container-name>
 ```
+
 Stops a running container.
 
 ```powershell
 docker start <container-name>
 ```
+
 Starts an existing stopped container.
 
 ```powershell
 docker rm <container-name>
 ```
+
 Removes a stopped container.
 
 ```powershell
 docker ps --filter "name=<container-name>"
 ```
+
 Filters containers by name.
 
 ## Naming a Container
@@ -147,14 +160,15 @@ Example build order:
 1. Use Python base image
 2. Copy requirements.txt
 3. Install dependencies
+
 ## 4. Copy application code
 
 If we later change only main.py:
 
-Python base did not change       -> reuse cache
+Python base did not change -> reuse cache
 requirements.txt did not change -> reuse cache
-dependencies did not change     -> reuse cache
-application code changed        -> rebuild this part
+dependencies did not change -> reuse cache
+application code changed -> rebuild this part
 
 This is why we copy requirements.txt and install dependencies
 BEFORE copying the application code.
@@ -168,7 +182,7 @@ main.py can cause the later dependency installation step to run again.
 Simple understanding:
 
 No change -> Docker can reuse cached work
-Change    -> Docker rebuilds from the affected step onward
+Change -> Docker rebuilds from the affected step onward
 
 Benefit:
 Faster Docker builds and avoids reinstalling dependencies
