@@ -1,7 +1,9 @@
 # Day 02 - POST endpoint and Pydantic validation
+
 Date: 14-Sep-2026
 
 ## Concepts in this file
+
 - BaseModel
 - Field constraints
 - optional fields
@@ -13,13 +15,14 @@ Date: 14-Sep-2026
 ## ORIGINAL LEARNING NOTES
 
 pydantic
-installed -  pip install pydantic (ran in terminal)
+installed - pip install pydantic (ran in terminal)
 
 BaseModel
 
 Employee inherits from Pydantic BaseModel.
 
 This gives the model features such as:
+
 - request data validation
 - type conversion
 - field constraints
@@ -37,6 +40,7 @@ Also explored about model_dump (dictionary), model_dump_json (json format) which
 ## Day 2 - POST endpoint and Pydantic validation
 
 Learned:
+
 - BaseModel
 - Field validation
 - Optional fields
@@ -47,6 +51,7 @@ Learned:
 - model_dump_json()
 
 Tested:
+
 - Valid employee request -> 200
 - Invalid age -> 422
 - Optional department omitted -> accepted
