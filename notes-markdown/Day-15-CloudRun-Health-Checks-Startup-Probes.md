@@ -156,27 +156,35 @@ Cloud Run
 ## Key concepts to remember
 
 ### Health endpoint
+
 A lightweight endpoint used to tell the platform that the application is healthy.
 
 ### Startup probe
+
 Used during application/container startup to determine whether the application has started successfully.
 
 ### TCP probe
+
 Checks whether a connection can be made to the configured port.
 
 ### HTTP probe
+
 Calls an HTTP endpoint such as /health. This checks the application more directly than only checking whether the port is open.
 
 ### Initial delay
+
 How long Cloud Run waits before performing the first startup probe.
 
 ### Period
+
 How often the probe runs.
 
 ### Timeout
+
 How long Cloud Run waits for one probe attempt.
 
 ### Failure threshold
+
 How many consecutive probe failures are allowed before startup is considered failed.
 
 ## Day 15 takeaway
