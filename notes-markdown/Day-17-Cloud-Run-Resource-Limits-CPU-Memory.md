@@ -119,7 +119,7 @@ The conversation records deploying Docker image v10. Artifact Registry stores th
 
 ## Sources and evidence
 
-The companion workbook embeds selected screenshot captures from the original conversation, with concise captions. Observed values are approximate and specific to this learning exercise.
+The companion workbook embeds selected screenshot captures from the original conversation, with concise captions. Observed values are approximate and specific to this learning exercise..
 
 - [Learning conversation](https://chatgpt.com/c/6aa66e73-10d4-83ed-b1d2-0f0f2ca78540)
 - [Autoscaling](https://docs.cloud.google.com/run/docs/about-instance-autoscaling)
