@@ -17,7 +17,7 @@ Request Count → employee-api filter → response codes starting with 5
 |---|---|
 | Rolling window | Which recent data do I use? |
 | Rolling window function | What calculation do I apply to that data? |
-| Across time series | How do I combine separate streams? |
+| Across time series | How do I combine separate sequences of measurements—for example, the 5xx request rates reported for different revisions of employee-api? |
 | Threshold | What calculated value is unacceptable? |
 | Retest window | How long must that calculated violation persist? |
 | Missing data | What happens when there is no measurement? |
