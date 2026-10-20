@@ -5,6 +5,8 @@ import os
 import logging
 from google.cloud.logging_v2.handlers import StructuredLogHandler
 from fastapi import FastAPI, HTTPException
+import asyncio
+from contextlib import asynccontextmanager
 
 
 if os.getenv("K_SERVICE"):
@@ -20,22 +22,36 @@ else:
         format="%(levelname)s: %(name)s - %(message)s"
     )
 
+# Day 23 - Test application startup and graceful shutdown.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logging.info("Day 23 - Application started")
+
+    yield
+
+    logging.info("Day 23 - Application shutting down")
+    logging.info("Day 23 - Application cleanup completed")
+
 app = FastAPI(
     title="New Learning API",
+    lifespan=lifespan
 )
 
 app.include_router(land.router, prefix="")
 app.include_router(health.router, prefix="/health")
 app.include_router(employee.router, prefix="/employees", tags=["employees"])
 
-# Day 21 - Temporary endpoint to test Cloud Monitoring 5xx alerts.
+
+# Day 23 - Temporary endpoint to test Cloud Run request timeout.
 # Remove after testing.
-@app.get("/test-500")
-def test_server_error():
-    raise HTTPException(
-        status_code=500,
-        detail="Intentional error for Cloud Monitoring testing"
-    )
+@app.get("/test-timeout")
+async def test_timeout():
+    await asyncio.sleep(25)
+
+    return {
+        "status": "completed",
+        "message": "Request completed after 25 seconds"
+    }
 
 
 if __name__ == "__main__":
