@@ -372,6 +372,84 @@ HTTP 202 does not instruct Cloud Run to restart that specific BackgroundTasks fu
 
 ## 8. Production queue and worker design
 
+### What is Google Cloud Tasks?
+
+Google Cloud Tasks is a managed queue service. In my MES example, it holds a request for work that should happen separately from the original Station Service request. Google manages the queue service; I still write the application that performs the MES operation.
+
+I need to distinguish the **Cloud Tasks service** from **a task**. The service manages queues and delivery. A task is one item of work placed in a queue, such as the instruction to process ORDER100 using TransactionId TX573. The task carries the information needed to deliver that work to my application. It is not a running Python function or a SQL operation executing inside the queue.
+
+In the HTTP design we discussed, creating a task tells Cloud Tasks which worker endpoint to call and what request data to send. Our example payload was:
+
+```json
+{"transaction_id": "TX573", "order_id": "ORDER100"}
+```
+
+The queue retains the task and controls its dispatch and delivery retries. **Enqueue** means successfully adding the task to that queue. **Dispatch** means sending its HTTP request to the worker. **Retry** means making another delivery attempt when the earlier attempt was not successfully acknowledged, subject to the configured policy and service limits.
+
+This solves a different problem from my local `background_tasks.add_task(...)`. The local registration exists inside FastAPI's process. A successfully stored Cloud Tasks task exists outside that process, so the submission API can restart without that alone erasing the queued work. The queue is still subject to retry and retention limits; it is not a permanent MES transaction-history table.
+
+### What is the worker? Is “Cloud Worker” another service?
+
+My question was: **“Is the cloud worker a GCP product or our own application?”** The answer is that **the worker is our own application code**. In the architecture we discussed, **Cloud Run is the GCP product that hosts that application**, and **Cloud Tasks is the GCP product that queues and delivers its work**.
+
+| Name | GCP product or my code? | Role |
+|---|---|---|
+| Google Cloud Tasks | GCP product | Stores queued tasks and sends HTTP requests to my worker. |
+| Google Cloud Run | GCP product | Runs the application/container that I deploy. |
+| Worker, for example `/internal/process-job` | My application code | Receives the request, performs the MES/SQL operation and returns an HTTP response. |
+
+For example, I could write `/internal/process-job` in FastAPI or ASP.NET Core, package the application and deploy it to Cloud Run. When Cloud Tasks calls that endpoint, **my code** executes the business rules and SQL operations. Google supplies the queue and hosting services; it does not supply my MES order-processing logic.
+
+My PDT analogy is: **RabbitMQ delivers the message; my PDT consumer processes it. Cloud Tasks delivers the HTTP request; my worker application processes it.** “Worker” describes the application's responsibility, rather than identifying a separate product I must buy or enable.
+
+In this discussion, **worker** means the application code that receives the queued work and performs the business operation. The specific hosting example was a **Cloud Run worker endpoint**. “Cloud Worker” was not the name of a separate Google product that automatically understands or processes my orders.
+
+Cloud Run hosts my application/container. My application exposes an HTTP route such as `POST /internal/process-job`. Cloud Tasks calls that route. The handler at that route is the worker: it reads the TransactionId and OrderId, checks whether the operation was already completed, performs eligible business processing, records the outcome and returns an HTTP response.
+
+For my C# mental model, this worker is comparable in responsibility to my PDT consumer. A PDT consumer receives a RabbitMQ message and runs my business logic. The Cloud Tasks worker receives an HTTP request and runs my business logic. In both cases, I own the processing code. The broker or queue service owns delivery responsibilities.
+
+The submission endpoint and worker endpoint have different responsibilities even if they use the same programming framework. **Submission** validates and hands off the work. **Processing** executes it and records the result. A separate service/container is an architectural option; calling something a worker does not itself create another machine or process.
+
+### Which component does what?
+
+| Component | Responsibility in my MES example | What it does not establish by itself |
+|---|---|---|
+| Station Service / HMI | Submits an operation and obtains its eventual business result. | Receiving 202 does not establish order completion. |
+| FastAPI submission endpoint | Validates the request and successfully hands it to the durable processing mechanism before acknowledging durable acceptance. | It has not necessarily executed the SQL operation. |
+| Cloud Tasks queue | Retains the task, controls dispatch and retries delivery under its policy. | It does not implement my order-completion rules or automatically update my SQL job status. |
+| Cloud Run | Hosts the application that handles the worker request. | It does not automatically reconstruct and rerun a lost FastAPI BackgroundTasks function. |
+| Worker / HTTP handler | Executes my business logic, checks idempotency, records the result and acknowledges the delivery. | Receiving a task does not mean processing has already succeeded. |
+| Shared persistent store | Retains job state, business results and the evidence needed for safe duplicate handling/recovery. | Persistence does not make the database continuously available. |
+| Reconciliation process | Investigates unresolved business outcomes and safely recovers or escalates them. | It cannot recover a request that was never retained anywhere. |
+
+### How a task moves through the system, step by step
+
+The TX573 scenario was an architecture example. We did not implement this Cloud Tasks flow during the local experiment.
+
+1. **Station Service submits the operation.** It sends ORDER100 / TX573 to the submission API. This is the caller's original HTTP request.
+2. **The API hands off the request.** It creates a task containing the work information and the worker target. The API needs confirmation that the queue accepted it before claiming that durable handoff succeeded.
+3. **The API responds to Station Service.** It returns HTTP 202 Accepted. Station Service can stop waiting for that submission request, but it still needs the eventual business outcome.
+4. **Cloud Tasks dispatches the task.** According to queue settings, it sends a new HTTP request to `/internal/process-job`. This is a second request, whose caller is now Cloud Tasks.
+5. **My worker handles that request.** It checks durable state for TX573, performs the SQL/business operation if appropriate, and records the outcome. The business logic runs in my worker application, not inside Cloud Tasks.
+6. **My worker acknowledges delivery.** Once its processing contract has been satisfied, it returns an HTTP success response to Cloud Tasks. If processing fails or no acknowledgement arrives, the queue can retry under its policy.
+7. **Station Service discovers the business result.** It reads the application's status endpoint or receives a completion event. Cloud Tasks' delivery response is not a later response appended to the original Station Service request.
+
+The original HTTP request does not remain open until step 7. This is why asynchronous acceptance needs a separate way to observe progress and completion.
+
+### What changes when something goes wrong?
+
+If SQL is unavailable when the worker receives TX573, the worker cannot truthfully report that the SQL operation completed. In our examples it returns a failure such as 500 or 503, allowing delivery retries. Cloud Tasks retains the work independently of that worker process while the task remains eligible for delivery.
+
+If SQL commits but the worker crashes before acknowledging, the queue cannot infer that commit from the missing HTTP response. A later delivery must use the same TransactionId and check durable business state. That is why a reliable queue still needs an idempotent worker.
+
+If the worker instead starts another FastAPI BackgroundTasks function and immediately returns 200, it has acknowledged the queue before that function finishes. A subsequent crash could lose the function after the queue has already treated delivery as successful. For this design, the worker request must cover the actual handling it is acknowledging.
+
+If retries eventually end, the queue does not automatically run a reconciliation service or tell my HMI that the order is permanently Failed. My application must retain and investigate unresolved outcomes. Sections 9–13 explain retry settings, exhaustion, reconciliation, durability and the case where SQL was already unavailable at initial submission.
+
+For terminology verification, Google's [Cloud Tasks overview](https://docs.cloud.google.com/tasks/docs/dual-overview) defines a task as asynchronous work, a worker/handler as the application processing it, and describes HTTP delivery to a target such as Cloud Run. The detailed MES sequence above expands the architecture discussed during Day 25; it is not an additional deployment or test result.
+
+### Mapping this back to my RabbitMQ/PDT experience
+
 My familiar pattern is Station Service → RabbitMQ → PDT consumer → business processing → ACK/NACK. Cloud Tasks applies a related delivery pattern through HTTP:
 
 ```text
