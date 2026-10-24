@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import employee,health,land
+from .routers import employee,health,land, mes_orders
 import uvicorn
 import os
 import logging
@@ -40,6 +40,7 @@ app = FastAPI(
 app.include_router(land.router, prefix="")
 app.include_router(health.router, prefix="/health")
 app.include_router(employee.router, prefix="/employees", tags=["employees"])
+app.include_router(mes_orders.router)
 
 
 # Day 23 - Temporary endpoint to test Cloud Run request timeout.
