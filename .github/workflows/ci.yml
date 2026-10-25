@@ -7,7 +7,13 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on:
+      ubuntu-latest
+
+      # Run all shell commands from our FastAPI project folder.
+    defaults:
+      run:
+        working-directory: 01-python-fastapi
 
     steps:
       - name: Checkout source code
