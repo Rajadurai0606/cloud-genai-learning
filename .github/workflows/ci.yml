@@ -53,3 +53,14 @@ jobs:
         run: |
           gcloud auth print-access-token > /dev/null
           echo "Google Cloud authentication verified"
+
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+
+      - name: Tag Docker image for Artifact Registry
+        run: |
+          docker tag employee-api:ci europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:${{ github.sha }}
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:${{ github.sha }}
