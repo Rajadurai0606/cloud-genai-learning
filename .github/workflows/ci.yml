@@ -64,3 +64,10 @@ jobs:
       - name: Push Docker image to Artifact Registry
         run: |
           docker push europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: employee-api
+          region: europe-west2
+          image: europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:${{ github.sha }}
