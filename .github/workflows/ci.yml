@@ -71,3 +71,5 @@ jobs:
           service: employee-api
           region: europe-west2
           image: europe-west2-docker.pkg.dev/cloud-genai-learning/employee-api/employee-api:${{ github.sha }}
+          no_traffic: true
+          tag: candidate
