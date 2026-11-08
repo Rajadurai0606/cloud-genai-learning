@@ -136,3 +136,13 @@ jobs:
           test "$CANDIDATE_REVISION" = "$TAGGED_REVISION"
 
           echo "Candidate revision verified"
+
+      - name: Promote verified candidate to production
+        run: |
+          echo "Promoting revision: $CANDIDATE_REVISION"
+
+          gcloud run services update-traffic employee-api \
+            --region europe-west2 \
+            --to-revisions="$CANDIDATE_REVISION=100"
+
+          echo "Traffic promotion completed"
