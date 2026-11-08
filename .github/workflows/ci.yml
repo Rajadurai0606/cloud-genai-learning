@@ -7,6 +7,9 @@ on:
 
 jobs:
   test:
+    concurrency:
+      group: employee-api-deployment
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
@@ -74,6 +77,17 @@ jobs:
           no_traffic: true
           tag: candidate
 
+      - name: Capture deployed candidate revision
+        run: |
+          REVISION=$(gcloud run services describe employee-api \
+            --region europe-west2 \
+            --format="value(status.latestCreatedRevisionName)")
+
+          test -n "$REVISION"
+
+          echo "Deployed revision: $REVISION"
+          echo "CANDIDATE_REVISION=$REVISION" >> "$GITHUB_ENV"
+
       - name: Generate Cloud Run ID token
         id: cloud-run-token
         uses: google-github-actions/auth@v3
@@ -108,3 +122,17 @@ jobs:
           python -c 'import json; d=json.load(open("response.json")); assert d["message"] == "Employee API"; assert d["version"] == "3.0"; assert d["api_key_configured"] is True'
 
           echo "Candidate smoke test passed"
+
+      - name: Verify candidate revision before promotion
+        run: |
+          TAGGED_REVISION=$(gcloud run services describe employee-api \
+            --region europe-west2 \
+            --format=json | \
+            python -c 'import json,sys; d=json.load(sys.stdin); print(next(t["revisionName"] for t in d["status"]["traffic"] if t.get("tag")=="candidate"))')
+
+          echo "Captured revision: $CANDIDATE_REVISION"
+          echo "Tagged revision: $TAGGED_REVISION"
+
+          test "$CANDIDATE_REVISION" = "$TAGGED_REVISION"
+
+          echo "Candidate revision verified"
