@@ -84,3 +84,27 @@ jobs:
           token_format: id_token
           id_token_audience: https://employee-api-972261256506.europe-west2.run.app
           id_token_include_email: true
+
+      - name: Smoke test candidate revision
+        env:
+          ID_TOKEN: ${{ steps.cloud-run-token.outputs.id_token }}
+        run: |
+          CANDIDATE_URL=$(gcloud run services describe employee-api \
+            --region europe-west2 --format=json | \
+            python -c 'import json,sys; d=json.load(sys.stdin); print(next(t["url"] for t in d["status"]["traffic"] if t.get("tag")=="candidate"))')
+
+          echo "Calling candidate revision..."
+
+          HTTP_CODE=$(curl --silent --show-error \
+            --output response.json \
+            --write-out "%{http_code}" \
+            -H "Authorization: Bearer $ID_TOKEN" \
+            "$CANDIDATE_URL/")
+
+          echo "HTTP status: $HTTP_CODE"
+
+          test "$HTTP_CODE" = "200"
+
+          python -c 'import json; d=json.load(open("response.json")); assert d["message"] == "Employee API"; assert d["version"] == "3.0"; assert d["api_key_configured"] is True'
+
+          echo "Candidate smoke test passed"
