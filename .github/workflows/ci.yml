@@ -119,7 +119,7 @@ jobs:
 
           test "$HTTP_CODE" = "200"
 
-          python -c 'import json; d=json.load(open("response.json")); assert d["message"] == "Employee API"; assert d["version"] == "99.0"; assert d["api_key_configured"] is True'
+          python -c 'import json; d=json.load(open("response.json")); assert d["message"] == "Employee API"; assert d["version"] == "3.0"; assert d["api_key_configured"] is True'
 
           echo "Candidate smoke test passed"
 
