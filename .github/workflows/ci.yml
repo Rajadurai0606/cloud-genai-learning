@@ -5,6 +5,7 @@ on:
 
 jobs:
   test:
+    environment: production
     concurrency:
       group: employee-api-deployment
       cancel-in-progress: false
