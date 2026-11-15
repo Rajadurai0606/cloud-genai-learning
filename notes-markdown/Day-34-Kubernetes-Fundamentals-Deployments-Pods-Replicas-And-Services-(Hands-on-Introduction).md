@@ -59,12 +59,12 @@ flowchart TB
 
 My follow-up was whether GKE needs a separate Node to run its control plane. The precise correction was: the control plane needs **computing resources**, but those resources do not have to be a worker Node listed by my `kubectl get nodes` command. In the GKE example discussed, Google runs and manages control-plane VMs separately from the worker Nodes that run my application Pods. Those control-plane machines are not normally listed as my cluster's worker Nodes.
 
-| Question | My Docker Desktop setup | GKE example discussed |
-|---|---|---|
-| Computing resources | My Windows PC supplies local resources | Google Cloud infrastructure |
-| Control-plane placement | Shares the local Node environment | Separate Google-managed machines |
-| Application placement | Same local Node | Worker Nodes |
-| Reason | Simple setup and lower local resource use | Managed infrastructure and separation of responsibilities |
+| Question                | My Docker Desktop setup                   | GKE example discussed                                     |
+| ----------------------- | ----------------------------------------- | --------------------------------------------------------- |
+| Computing resources     | My Windows PC supplies local resources    | Google Cloud infrastructure                               |
+| Control-plane placement | Shares the local Node environment         | Separate Google-managed machines                          |
+| Application placement   | Same local Node                           | Worker Nodes                                              |
+| Reason                  | Simple setup and lower local resource use | Managed infrastructure and separation of responsibilities |
 
 ```mermaid
 flowchart TB
@@ -181,11 +181,11 @@ kubectl get pods -o wide
 
 `scale` changes the live Deployment's desired replica count. Kubernetes created two additional Pods while retaining the existing one. `-o wide` adds useful columns such as Pod IP and Node. S022 showed the Deployment `3/3` Ready with three available replicas. All Pods were `1/1` Running with zero restarts.
 
-| Full Pod name | IP before deletion | Node |
-|---|---|---|
-| employee-api-cb88dd9c9-mf9bv | 10.1.0.6 | docker-desktop |
-| employee-api-cb88dd9c9-c58lk | 10.1.0.7 | docker-desktop |
-| employee-api-cb88dd9c9-9stqv | 10.1.0.8 | docker-desktop |
+| Full Pod name                | IP before deletion | Node           |
+| ---------------------------- | ------------------ | -------------- |
+| employee-api-cb88dd9c9-mf9bv | 10.1.0.6           | docker-desktop |
+| employee-api-cb88dd9c9-c58lk | 10.1.0.7           | docker-desktop |
+| employee-api-cb88dd9c9-9stqv | 10.1.0.8           | docker-desktop |
 
 <a id="t003-02"></a>
 
@@ -232,12 +232,12 @@ flowchart LR
 
 A Kubernetes Deployment runs and maintains application Pods. It does not automatically create a public URL or configure Cloud Run IAM. A Service provides stable networking to matching Pods. A **ClusterIP** Service is internal, and creating it does not automatically provide application authentication. External exposure could later use a Gateway, Ingress or LoadBalancer with appropriate security. Those were future options, not things configured today.
 
-| Responsibility | Deployment | Service | Port forwarding |
-|---|---|---|---|
-| Main purpose | Manage application instances | Stable networking to eligible Pods | Temporary access from my Windows PC |
-| Configuration | Image, Pod template, replicas | Selector, Service port, target port | Local port and selected Pod port |
-| Pod replacement | Managed through ReplicaSet | Tracks changing eligible backends | Session can depend on the selected Pod |
-| Public URL / IAM | Not automatic | Not automatic for ClusterIP | Not an external hosting solution |
+| Responsibility   | Deployment                    | Service                             | Port forwarding                        |
+| ---------------- | ----------------------------- | ----------------------------------- | -------------------------------------- |
+| Main purpose     | Manage application instances  | Stable networking to eligible Pods  | Temporary access from my Windows PC    |
+| Configuration    | Image, Pod template, replicas | Selector, Service port, target port | Local port and selected Pod port       |
+| Pod replacement  | Managed through ReplicaSet    | Tracks changing eligible backends   | Session can depend on the selected Pod |
+| Public URL / IAM | Not automatic                 | Not automatic for ClusterIP         | Not an external hosting solution       |
 
 <a id="t004-02"></a>
 
@@ -282,7 +282,7 @@ curl.exe -i http://localhost:8000/health
 The `-i` option includes response headers. S015 showed **HTTP/1.1 200 OK**, server `uvicorn`, JSON content type and this response:
 
 ```json
-{"status":"healthy","service":"new-learning-api"}
+{ "status": "healthy", "service": "new-learning-api" }
 ```
 
 This verified the application request/response path through port forwarding. The JSON's service value is `new-learning-api`, although my Kubernetes Deployment is named `employee-api`; I retain the actual response rather than replacing its value with the resource name.
@@ -293,12 +293,12 @@ This verified the application request/response path through port forwarding. The
 
 I explicitly requested that this explanation be preserved. Terminal 1 runs port forwarding; Terminal 2 sends the HTTP request. If I close Terminal 1 or press Ctrl+C, **that forwarding session stops**. Windows `localhost:8000` can no longer reach my Pod through it. The Deployment, Pod and FastAPI process continue running because the forwarding command is not hosting them.
 
-| Component after Terminal 1 closes | Expected behavior explained |
-|---|---|
-| Port-forward bridge | Stops |
-| localhost access through that bridge | Stops |
-| Deployment and Employee API Pod | Continue running |
-| FastAPI process in the Pod | Continues running |
+| Component after Terminal 1 closes    | Expected behavior explained |
+| ------------------------------------ | --------------------------- |
+| Port-forward bridge                  | Stops                       |
+| localhost access through that bridge | Stops                       |
+| Deployment and Employee API Pod      | Continue running            |
+| FastAPI process in the Pod           | Continues running           |
 
 ```mermaid
 flowchart LR
@@ -354,10 +354,10 @@ DNS resolves the Service name. The Service networking mechanism chooses an eligi
 
 I asked whether an Order application needs an Order Service. If Order API only sends outbound requests to Employee API, it does **not** need its own Service solely to make those calls. If other applications need a stable inbound address to Order API, I would normally create `order-api-service` selecting Pods labelled `app=order-api`.
 
-| Hypothetical receiver | Service | Selector | Pod label |
-|---|---|---|---|
-| Employee API | employee-api-service | app=employee-api | app=employee-api |
-| Order API, if it receives calls | order-api-service | app=order-api | app=order-api |
+| Hypothetical receiver           | Service              | Selector         | Pod label        |
+| ------------------------------- | -------------------- | ---------------- | ---------------- |
+| Employee API                    | employee-api-service | app=employee-api | app=employee-api |
+| Order API, if it receives calls | order-api-service    | app=order-api    | app=order-api    |
 
 One Service can select multiple replicas of an application. Three Employee API Pods do not require three Services. A label's value is a name I choose; matching matters, not whether its spelling equals the Deployment name.
 
@@ -419,12 +419,12 @@ flowchart TB
 
 I verified again with `kubectl get pods -o wide` and `kubectl describe service employee-api-service`. S027 showed exactly three Running Pods, the old Pod absent and endpoints `.6:8000,.8:8000,.9:8000`. The Service ClusterIP remained `10.105.206.127`. No Service events/errors were shown in that description.
 
-| Stage | Ready/running Pod IPs | Service backend endpoints |
-|---|---|---|
-| One replica | 10.1.0.6 | 10.1.0.6:8000 |
-| After scaling | 10.1.0.6, .7, .8 | 10.1.0.6:8000, 10.1.0.7:8000, 10.1.0.8:8000 |
-| Transition | .6, .8, new .9 Running; old .7 Terminating | Final transition endpoint list was not captured separately |
-| Recovery verified | 10.1.0.6, .8, .9 | 10.1.0.6:8000, 10.1.0.8:8000, 10.1.0.9:8000 |
+| Stage             | Ready/running Pod IPs                      | Service backend endpoints                                  |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| One replica       | 10.1.0.6                                   | 10.1.0.6:8000                                              |
+| After scaling     | 10.1.0.6, .7, .8                           | 10.1.0.6:8000, 10.1.0.7:8000, 10.1.0.8:8000                |
+| Transition        | .6, .8, new .9 Running; old .7 Terminating | Final transition endpoint list was not captured separately |
+| Recovery verified | 10.1.0.6, .8, .9                           | 10.1.0.6:8000, 10.1.0.8:8000, 10.1.0.9:8000                |
 
 ```mermaid
 flowchart LR
@@ -472,14 +472,14 @@ This verified the running server's port, supporting the earlier `ExposedPorts=nu
 
 ### T005.06 — Logs versus describe and useful troubleshooting commands
 
-| Command | What I learn | Lesson evidence |
-|---|---|---|
-| `kubectl logs <pod-name>` | Application/container output, such as Uvicorn startup or C# exceptions | Executed for 9ngbl |
-| `kubectl logs -f <pod-name>` | Follow newly written logs | Explained, not observed executed |
-| `kubectl logs --previous <pod-name>` | Previous terminated container instance logs, when available | Explained, not observed executed |
-| `kubectl describe pod <pod-name>` | Kubernetes state, scheduling information and events | Explained targeted form |
-| `kubectl describe pod` | Describes Pods in the current namespace when no name is supplied | Actual uploaded command/output |
-| `kubectl get pods -o wide` | Pod IP and Node as well as basic state | Executed repeatedly |
+| Command                              | What I learn                                                           | Lesson evidence                  |
+| ------------------------------------ | ---------------------------------------------------------------------- | -------------------------------- |
+| `kubectl logs <pod-name>`            | Application/container output, such as Uvicorn startup or C# exceptions | Executed for 9ngbl               |
+| `kubectl logs -f <pod-name>`         | Follow newly written logs                                              | Explained, not observed executed |
+| `kubectl logs --previous <pod-name>` | Previous terminated container instance logs, when available            | Explained, not observed executed |
+| `kubectl describe pod <pod-name>`    | Kubernetes state, scheduling information and events                    | Explained targeted form          |
+| `kubectl describe pod`               | Describes Pods in the current namespace when no name is supplied       | Actual uploaded command/output   |
+| `kubectl get pods -o wide`           | Pod IP and Node as well as basic state                                 | Executed repeatedly              |
 
 My MES troubleshooting sequence is to locate the workload, identify its Pod, inspect application logs and inspect Pod details to distinguish an application problem from startup, scheduling or infrastructure issues. A previous container's logs are not a general archive of every deleted Pod.
 
@@ -487,13 +487,13 @@ My MES troubleshooting sequence is to locate the workload, identify its Pod, ins
 
 ### T005.07 — The complete uploaded Pod description
 
-S030 contains only the upper part of the description. The original `kubectl describe pod results.txt` contains **all three Pod descriptions**, not just 9ngbl. The actual command in the file is `kubectl describe pod` without a name. I retain the full text in the companion attachment and the Markdown appendix, and the workbook includes every line under T005.
+S030 contains only the upper part of the description. The original `kubectl describe pod results.txt` contains **all three Pod descriptions**, not just 9ngbl. The actual command in the file is `kubectl describe pod` without a name. I retain the full text in the companion attachment and the Markdown appendix, while Excel keeps only a brief reminder beside the original diagnostic screenshots.
 
-| Pod suffix | Pod IP | Node | Ready | Restart count |
-|---|---|---|---|---|
-| 9ngbl | 10.1.0.9 | docker-desktop/192.168.65.3 | True | 0 |
-| 9stqv | 10.1.0.8 | docker-desktop/192.168.65.3 | True | 0 |
-| mf9bv | 10.1.0.6 | docker-desktop/192.168.65.3 | True | 0 |
+| Pod suffix | Pod IP   | Node                        | Ready | Restart count |
+| ---------- | -------- | --------------------------- | ----- | ------------- |
+| 9ngbl      | 10.1.0.9 | docker-desktop/192.168.65.3 | True  | 0             |
+| 9stqv      | 10.1.0.8 | docker-desktop/192.168.65.3 | True  | 0             |
+| mf9bv      | 10.1.0.6 | docker-desktop/192.168.65.3 | True  | 0             |
 
 All are in `default`, Running, labelled `app=employee-api` and `pod-template-hash=cb88dd9c9`, controlled by `ReplicaSet/employee-api-cb88dd9c9`. The file shows the v16 image and port 8000 for the first two records; the original third record's container details are shorter, so I do not invent its omitted fields. Conditions shown True include PodReadyToStartContainers, Initialized, Ready, ContainersReady and PodScheduled.
 
@@ -555,28 +555,28 @@ spec:
 
 Blank lines improve readability. Indentation defines parent/child relationships; the two `spec` and `metadata` blocks refer to different objects because of their position.
 
-| Line(s) | Field/value | My explanation and practical effect |
-|---|---|---|
-| 1 | apiVersion: apps/v1 | Selects the API group/version that understands Deployments. |
-| 2 | kind: Deployment | Chooses a Deployment resource rather than a Pod or Service. |
-| 4 | metadata | Starts the Deployment's identifying information. |
-| 5 | name: employee-api | Names the Deployment used by my kubectl commands. |
-| 7 | spec | Begins the Deployment's desired behavior. |
-| 8 | replicas: 3 | Requests three application Pods through its ReplicaSet. |
-| 10 | selector | Begins the rule identifying managed Pods. |
-| 11 | matchLabels | Requires the listed label equality matches. |
-| 12 | app: employee-api | Selects the application label used by this Deployment. |
-| 14 | template | Begins the blueprint for new Pods. |
-| 15 | metadata | Metadata belonging to that Pod blueprint. |
-| 16 | labels | Labels assigned to created Pods. |
-| 17 | app: employee-api | Gives each new Pod the label matching the selector. |
-| 19 | spec | Desired contents of each Pod, not the outer Deployment spec. |
-| 20 | containers | Begins the list of containers inside a Pod. |
-| 21 | - name: employee-api | Adds and names the one application container. |
-| 22 | image: employee-api:v16 | Uses the actual earlier-built local image. |
-| 23 | imagePullPolicy: IfNotPresent | Uses an image already available to the Node runtime; otherwise attempts to pull it. Local Docker availability alone is not a universal guarantee for every runtime. |
-| 24 | ports | Begins declared container-port metadata. |
-| 25 | - containerPort: 8000 | Documents the intended container port. It does not start Uvicorn, create a Service or publish Windows port 8000. |
+| Line(s) | Field/value                   | My explanation and practical effect                                                                                                                                 |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | apiVersion: apps/v1           | Selects the API group/version that understands Deployments.                                                                                                         |
+| 2       | kind: Deployment              | Chooses a Deployment resource rather than a Pod or Service.                                                                                                         |
+| 4       | metadata                      | Starts the Deployment's identifying information.                                                                                                                    |
+| 5       | name: employee-api            | Names the Deployment used by my kubectl commands.                                                                                                                   |
+| 7       | spec                          | Begins the Deployment's desired behavior.                                                                                                                           |
+| 8       | replicas: 3                   | Requests three application Pods through its ReplicaSet.                                                                                                             |
+| 10      | selector                      | Begins the rule identifying managed Pods.                                                                                                                           |
+| 11      | matchLabels                   | Requires the listed label equality matches.                                                                                                                         |
+| 12      | app: employee-api             | Selects the application label used by this Deployment.                                                                                                              |
+| 14      | template                      | Begins the blueprint for new Pods.                                                                                                                                  |
+| 15      | metadata                      | Metadata belonging to that Pod blueprint.                                                                                                                           |
+| 16      | labels                        | Labels assigned to created Pods.                                                                                                                                    |
+| 17      | app: employee-api             | Gives each new Pod the label matching the selector.                                                                                                                 |
+| 19      | spec                          | Desired contents of each Pod, not the outer Deployment spec.                                                                                                        |
+| 20      | containers                    | Begins the list of containers inside a Pod.                                                                                                                         |
+| 21      | - name: employee-api          | Adds and names the one application container.                                                                                                                       |
+| 22      | image: employee-api:v16       | Uses the actual earlier-built local image.                                                                                                                          |
+| 23      | imagePullPolicy: IfNotPresent | Uses an image already available to the Node runtime; otherwise attempts to pull it. Local Docker availability alone is not a universal guarantee for every runtime. |
+| 24      | ports                         | Begins declared container-port metadata.                                                                                                                            |
+| 25      | - containerPort: 8000         | Documents the intended container port. It does not start Uvicorn, create a Service or publish Windows port 8000.                                                    |
 
 For GKE I would need the image available to its Nodes, usually through a registry. This local image reference was appropriate for today's Docker Desktop exercise, not a complete cloud deployment configuration.
 
@@ -619,18 +619,18 @@ spec:
       protocol: TCP
 ```
 
-| Line(s) | Field/value | My explanation and practical effect |
-|---|---|---|
-| 1 | apiVersion: v1 | Uses the core v1 API for Services. |
-| 2 | kind: Service | Creates or updates a Service networking resource. |
-| 4–5 | metadata / name | Names it employee-api-service and supplies the name used in DNS. |
-| 7 | spec | Begins desired Service behavior. |
-| 8 | type: ClusterIP | Requests an internal virtual IP, without automatic public exposure. |
-| 10–11 | selector / app | Chooses Pods labelled app=employee-api independently of the Deployment's management selector. |
-| 13 | ports | Begins the Service port list. |
-| 14 | - port: 8000 | Clients connect to Service port 8000. |
-| 15 | targetPort: 8000 | Service networking sends traffic to port 8000 on the selected Pod. |
-| 16 | protocol: TCP | Uses TCP transport. |
+| Line(s) | Field/value      | My explanation and practical effect                                                           |
+| ------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| 1       | apiVersion: v1   | Uses the core v1 API for Services.                                                            |
+| 2       | kind: Service    | Creates or updates a Service networking resource.                                             |
+| 4–5     | metadata / name  | Names it employee-api-service and supplies the name used in DNS.                              |
+| 7       | spec             | Begins desired Service behavior.                                                              |
+| 8       | type: ClusterIP  | Requests an internal virtual IP, without automatic public exposure.                           |
+| 10–11   | selector / app   | Chooses Pods labelled app=employee-api independently of the Deployment's management selector. |
+| 13      | ports            | Begins the Service port list.                                                                 |
+| 14      | - port: 8000     | Clients connect to Service port 8000.                                                         |
+| 15      | targetPort: 8000 | Service networking sends traffic to port 8000 on the selected Pod.                            |
+| 16      | protocol: TCP    | Uses TCP transport.                                                                           |
 
 The YAML does not hard-code `10.105.206.127`. Applying it to the existing Service kept the existing resource identity; creating it in a new cluster can allocate another IP. The stable Service name is the better application reference. The live Service dump in S019 also had server-managed fields such as UID/resourceVersion and assigned IP information; that diagnostic output is not the same as my deliberately small source configuration.
 
@@ -711,11 +711,11 @@ flowchart TB
 
 My Station Manager analogy was a configuration saying “Station100, Station Manager, three instances, port 8000”. Saving it does not deploy it; something must submit it to the running environment. Apply performs that submission. **Apply is not a continuously running monitoring process.** Controllers perform ongoing reconciliation.
 
-| Teaching scenario | What apply is intended to do | Was this separate scenario executed? |
-|---|---|---|
-| Named resources already exist | Update accepted configuration rather than create duplicates | Yes: first actual apply returned configured |
-| A declared resource is absent | Create that declared resource if valid | Discussed scenario; not separately executed |
-| Replica setting changes in a file | Submit the new desired replica count | Discussed scenario; not separately executed |
+| Teaching scenario                 | What apply is intended to do                                | Was this separate scenario executed?        |
+| --------------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| Named resources already exist     | Update accepted configuration rather than create duplicates | Yes: first actual apply returned configured |
+| A declared resource is absent     | Create that declared resource if valid                      | Discussed scenario; not separately executed |
+| Replica setting changes in a file | Submit the new desired replica count                        | Discussed scenario; not separately executed |
 
 The original answer contained an interactive three-scenario element. Only its labels (already exists, deleted, changed replicas) were exposed in recovered text; its hidden selections were unavailable. The table above is a labelled explanatory reconstruction, not a claim to have recovered hidden text or executed those scenarios.
 
@@ -753,28 +753,20 @@ Final cleanup was optional and not performed in the recorded lesson. Keeping the
 
 ### T006.12 — My quick recall and deferred learning
 
-| If I forget… | My reminder |
-|---|---|
-| Cluster / Node / control plane | Whole environment / participating machine / cluster-management software |
-| Deployment / ReplicaSet / Pod | Desired application configuration / replica maintenance / running container group |
-| Service | Stable internal networking to selected eligible Pods |
-| EXPOSE or containerPort | Port declaration does not start a listener or publish Windows localhost |
-| Port forwarding | Temporary bridge; closing its terminal stops the bridge, not the app |
-| Labels / selectors | Assign tags / match tags; resource position determines purpose |
-| get pods | Reads state; controllers recover without waiting for it |
-| logs / describe | Application output / Kubernetes diagnostic state |
-| YAML / apply / controllers | Describe / submit / continuously reconcile live desired state |
-| Git commit | Confirmed by me; hash not shown |
+| If I forget…                   | My reminder                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------- |
+| Cluster / Node / control plane | Whole environment / participating machine / cluster-management software           |
+| Deployment / ReplicaSet / Pod  | Desired application configuration / replica maintenance / running container group |
+| Service                        | Stable internal networking to selected eligible Pods                              |
+| EXPOSE or containerPort        | Port declaration does not start a listener or publish Windows localhost           |
+| Port forwarding                | Temporary bridge; closing its terminal stops the bridge, not the app              |
+| Labels / selectors             | Assign tags / match tags; resource position determines purpose                    |
+| get pods                       | Reads state; controllers recover without waiting for it                           |
+| logs / describe                | Application output / Kubernetes diagnostic state                                  |
+| YAML / apply / controllers     | Describe / submit / continuously reconcile live desired state                     |
+| Git commit                     | Confirmed by me; hash not shown                                                   |
 
 Deferred topics were deeper ports/networking, Kubernetes authentication/permissions, external URL exposure, resource requests/limits and GitOps. Today's exercise did not test multi-node failover, persistent transaction recovery, an actual Order API caller, DNS resolution from a Pod or post-apply readiness. Those limits do not erase the practical results I did observe.
-
-## Evidence guide and verification limits
-
-`Day34_source_messages.json` retains 72 messages from the exact Day 34 start through the completion reply, with message IDs, captured source text and rendered HTML. The conversation reader initially exposed only five recent exchanges without a cursor; the browser recovered the full Day 34 range. `Day34_screenshot_inventory.json` records 35 source occurrences, 35 distinct recovered image hashes, chronological positions and destinations. Repeated local downloads during recovery are not additional source occurrences. The earlier Day 33 handwritten image and web illustration/search thumbnails are excluded from the Day 34 original-screenshot count.
-
-The source UI collapsed the long user networking question with “Show more”; its captured visible text and the full assistant answer retain the substantive questions, but the collapsed hidden remainder was not independently expanded. Interactive scenario choices in the apply answer were also not fully exposed. These specific limits are recorded in the audit. No claim of fully verified hidden interactive content is made.
-
-The workbook is grouped into T001 Setup, T002 Image Deployment, T003 Replicas, T004 Networking, T005 Recovery Logs and T006 YAML Apply, preceded by Overview. The companion audit maps every fine-grained section and each original screenshot to its worksheet location. File-level embedding and anchor checks are separate from visual-readability checks; consult the audit for what was actually checked. Library saving is not assumed from a local file save.
 
 ## Appendix — Full original pod-description attachment
 
@@ -921,289 +913,3 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 PS C:\Users\Admin>
 ```
-
-
-## Original screenshot gallery
-
-These are the original recovered files in chronological source order. The Excel index gives their grouped worksheet positions.
-
-<a id="s001"></a>
-
-### S001 — Kubernetes initially disabled in Docker Desktop
-
-Source screenshot 1; message 3, attachment 1. T001 Setup!B57.
-
-![S001: Kubernetes initially disabled in Docker Desktop](Day34_assets/S001.png)
-
-<a id="s002"></a>
-
-### S002 — Create cluster: kubeadm v1.36.1 selected
-
-Source screenshot 2; message 3, attachment 2. T001 Setup!B107.
-
-![S002: Create cluster: kubeadm v1.36.1 selected](Day34_assets/S002.png)
-
-<a id="s003"></a>
-
-### S003 — Install Kubernetes cluster confirmation
-
-Source screenshot 3; message 3, attachment 3. T001 Setup!B148.
-
-![S003: Install Kubernetes cluster confirmation](Day34_assets/S003.png)
-
-<a id="s004"></a>
-
-### S004 — Kubernetes cluster starting
-
-Source screenshot 4; message 3, attachment 4. T001 Setup!B187.
-
-![S004: Kubernetes cluster starting](Day34_assets/S004.png)
-
-<a id="s005"></a>
-
-### S005 — Active local cluster: one Ready Node, no application Pods
-
-Source screenshot 5; message 3, attachment 5. T001 Setup!B238.
-
-![S005: Active local cluster: one Ready Node, no application Pods](Day34_assets/S005.png)
-
-<a id="s006"></a>
-
-### S006 — PowerShell context and Node verification
-
-Source screenshot 6; message 5, attachment 1. T001 Setup!B288.
-
-![S006: PowerShell context and Node verification](Day34_assets/S006.png)
-
-<a id="s007"></a>
-
-### S007 — Local Docker image inventory, including Employee API versions
-
-Source screenshot 7; message 13, attachment 1. T002 Image Deployment!B66.
-
-![S007: Local Docker image inventory, including Employee API versions](Day34_assets/S007.png)
-
-<a id="s008"></a>
-
-### S008 — Image inventory continued, including Kubernetes system images
-
-Source screenshot 8; message 13, attachment 2. T002 Image Deployment!B98.
-
-![S008: Image inventory continued, including Kubernetes system images](Day34_assets/S008.png)
-
-<a id="s009"></a>
-
-### S009 — Inspect v16: ExposedPorts=null and python -m app.main
-
-Source screenshot 9; message 15, attachment 1. T002 Image Deployment!B132.
-
-![S009: Inspect v16: ExposedPorts=null and python -m app.main](Day34_assets/S009.png)
-
-<a id="s010"></a>
-
-### S010 — VS Code main.py: default 8000 and duplicate startup block
-
-Source screenshot 10; message 17, attachment 1. T002 Image Deployment!B146.
-
-![S010: VS Code main.py: default 8000 and duplicate startup block](Day34_assets/S010.png)
-
-<a id="s011"></a>
-
-### S011 — First Employee API Deployment created
-
-Source screenshot 11; message 19, attachment 1. T002 Image Deployment!B192.
-
-![S011: First Employee API Deployment created](Day34_assets/S011.png)
-
-<a id="s012"></a>
-
-### S012 — Deployment 1/1 and Pod Running with zero restarts
-
-Source screenshot 12; message 21, attachment 1. T002 Image Deployment!B226.
-
-![S012: Deployment 1/1 and Pod Running with zero restarts](Day34_assets/S012.png)
-
-<a id="s013"></a>
-
-### S013 — Docker Desktop: Deployment Available and one Pod
-
-Source screenshot 13; message 25, attachment 1. T002 Image Deployment!B269.
-
-![S013: Docker Desktop: Deployment Available and one Pod](Day34_assets/S013.png)
-
-<a id="s014"></a>
-
-### S014 — Port forwarding established and handling connection
-
-Source screenshot 14; message 29, attachment 1. T004 Networking!B132.
-
-![S014: Port forwarding established and handling connection](Day34_assets/S014.png)
-
-<a id="s015"></a>
-
-### S015 — HTTP 200 health response with new-learning-api JSON
-
-Source screenshot 15; message 29, attachment 2. T004 Networking!B150.
-
-![S015: HTTP 200 health response with new-learning-api JSON](Day34_assets/S015.png)
-
-<a id="s016"></a>
-
-### S016 — ClusterIP Service exposed successfully
-
-Source screenshot 16; message 33, attachment 1. T004 Networking!B169.
-
-![S016: ClusterIP Service exposed successfully](Day34_assets/S016.png)
-
-<a id="s017"></a>
-
-### S017 — Docker Desktop: Employee API Service
-
-Source screenshot 17; message 33, attachment 2. T004 Networking!B185.
-
-![S017: Docker Desktop: Employee API Service](Day34_assets/S017.png)
-
-<a id="s018"></a>
-
-### S018 — Service IP 10.105.206.127 and port 8000/TCP
-
-Source screenshot 18; message 33, attachment 3. T004 Networking!B216.
-
-![S018: Service IP 10.105.206.127 and port 8000/TCP](Day34_assets/S018.png)
-
-<a id="s019"></a>
-
-### S019 — Live Service YAML: metadata, selector and ports
-
-Source screenshot 19; message 37, attachment 1. T004 Networking!B233.
-
-![S019: Live Service YAML: metadata, selector and ports](Day34_assets/S019.png)
-
-<a id="s020"></a>
-
-### S020 — Service description: first endpoint 10.1.0.6:8000
-
-Source screenshot 20; message 37, attachment 2. T004 Networking!B277.
-
-![S020: Service description: first endpoint 10.1.0.6:8000](Day34_assets/S020.png)
-
-<a id="s021"></a>
-
-### S021 — Pod labels app=employee-api and generated hash
-
-Source screenshot 21; message 39, attachment 1. T004 Networking!B311.
-
-![S021: Pod labels app=employee-api and generated hash](Day34_assets/S021.png)
-
-<a id="s022"></a>
-
-### S022 — Scaling to three: actual Pod IPs and one Node
-
-Source screenshot 22; message 41, attachment 1. T003 Replicas!B44.
-
-![S022: Scaling to three: actual Pod IPs and one Node](Day34_assets/S022.png)
-
-<a id="s023"></a>
-
-### S023 — Docker Desktop: three Pods and 3/3 Deployment
-
-Source screenshot 23; message 43, attachment 1. T003 Replicas!B68.
-
-![S023: Docker Desktop: three Pods and 3/3 Deployment](Day34_assets/S023.png)
-
-<a id="s024"></a>
-
-### S024 — Service automatically discovers all three endpoints
-
-Source screenshot 24; message 45, attachment 1. T003 Replicas!B115.
-
-![S024: Service automatically discovers all three endpoints](Day34_assets/S024.png)
-
-<a id="s025"></a>
-
-### S025 — Local context check and deletion of Pod c58lk
-
-Source screenshot 25; message 47, attachment 1. T005 Recovery Logs!B101.
-
-![S025: Local context check and deletion of Pod c58lk](Day34_assets/S025.png)
-
-<a id="s026"></a>
-
-### S026 — Transition: replacement 9ngbl Running, old Pod Terminating
-
-Source screenshot 26; message 47, attachment 2. T005 Recovery Logs!B122.
-
-![S026: Transition: replacement 9ngbl Running, old Pod Terminating](Day34_assets/S026.png)
-
-<a id="s027"></a>
-
-### S027 — Final recovery: three Pods and updated endpoints
-
-Source screenshot 27; message 49, attachment 1. T005 Recovery Logs!B146.
-
-![S027: Final recovery: three Pods and updated endpoints](Day34_assets/S027.png)
-
-<a id="s028"></a>
-
-### S028 — kubectl logs error: missing POD or TYPE/NAME
-
-Source screenshot 28; message 51, attachment 1. T005 Recovery Logs!B178.
-
-![S028: kubectl logs error: missing POD or TYPE/NAME](Day34_assets/S028.png)
-
-<a id="s029"></a>
-
-### S029 — Correct logs command: Uvicorn listening on 8000
-
-Source screenshot 29; message 53, attachment 1. T005 Recovery Logs!B199.
-
-![S029: Correct logs command: Uvicorn listening on 8000](Day34_assets/S029.png)
-
-<a id="s030"></a>
-
-### S030 — kubectl describe pod: upper portion of diagnostic output
-
-Source screenshot 30; message 53, attachment 2. T005 Recovery Logs!B219.
-
-![S030: kubectl describe pod: upper portion of diagnostic output](Day34_assets/S030.png)
-
-<a id="s031"></a>
-
-### S031 — VS Code Deployment YAML with unsaved indicator
-
-Source screenshot 31; message 57, attachment 1. T006 YAML Apply!B210.
-
-![S031: VS Code Deployment YAML with unsaved indicator](Day34_assets/S031.png)
-
-<a id="s032"></a>
-
-### S032 — VS Code Service YAML and selector question
-
-Source screenshot 32; message 59, attachment 1. T006 YAML Apply!B243.
-
-![S032: VS Code Service YAML and selector question](Day34_assets/S032.png)
-
-<a id="s033"></a>
-
-### S033 — kubectl diff failed: external diff executable missing
-
-Source screenshot 33; message 61, attachment 1. T006 YAML Apply!B275.
-
-![S033: kubectl diff failed: external diff executable missing](Day34_assets/S033.png)
-
-<a id="s034"></a>
-
-### S034 — Server dry run accepted; last-applied annotation warnings
-
-Source screenshot 34; message 63, attachment 1. T006 YAML Apply!B293.
-
-![S034: Server dry run accepted; last-applied annotation warnings](Day34_assets/S034.png)
-
-<a id="s035"></a>
-
-### S035 — First actual apply configured both existing resources
-
-Source screenshot 35; message 65, attachment 1. T006 YAML Apply!B314.
-
-![S035: First actual apply configured both existing resources](Day34_assets/S035.png)
-
