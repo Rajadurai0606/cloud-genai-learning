@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: employee-api-config
+
+data:
+  APP_ENV: "QA"
+  LOG_LEVEL: "INFO"

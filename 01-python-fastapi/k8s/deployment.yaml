@@ -21,5 +21,19 @@ spec:
         - name: employee-api
           image: employee-api:v16
           imagePullPolicy: IfNotPresent
+
+          # Load environment variables from our ConfigMap
+          envFrom:
+            - configMapRef:
+                name: employee-api-config
+
+          # Load the API key from Kubernetes Secret
+          env:
+            - name: EMPLOYEE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: employee-api-secret
+                  key: EMPLOYEE_API_KEY
+
           ports:
             - containerPort: 8000
