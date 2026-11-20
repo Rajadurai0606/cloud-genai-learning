@@ -4,7 +4,7 @@
 
 I moved from Kubernetes architecture to running my own Employee API in a local cluster. I enabled Docker Desktop Kubernetes, deployed `employee-api:v16`, tested `/health`, created an internal Service, scaled to three Pods, deleted a Pod to observe recovery, inspected logs and Pod details, and saved Deployment and Service configuration as YAML. I confirmed that I committed the work to Git.
 
-The practical sequence was setup → image/deployment → networking/Service → scaling → recovery/logs → YAML/apply → Git confirmation. These notes group the original learning under stable topic IDs T001–T006, so networking appears after replicas even though I explored it first. **T007** records my later follow-up doubts about Pod, Container, Node IP, Service, Deployment and office `localhost` behavior.
+The practical sequence was setup → image/deployment → networking/Service → scaling → recovery/logs → YAML/apply → Git confirmation. These notes group the original learning under stable topic IDs T001–T006, so networking appears after replicas even though I explored it first. **T007** records my later follow-up doubts about Pod, Container, Node IP, Service, Deployment, Namespace, Workload terminology and office `localhost` behavior.
 
 My final **observed pre-apply** state was three ready Pods at `10.1.0.6`, `10.1.0.8`, and `10.1.0.9`, behind `employee-api-service` at `10.105.206.127:8000`. The first actual apply later returned `configured` for both resources. **Final post-apply Deployment/Pod/Service health verification was proposed but not observed.** No final resource deletion or cluster cleanup was performed in the conversation. The earlier deliberate deletion of one Pod was a recovery exercise.
 
@@ -768,7 +768,7 @@ Final cleanup was optional and not performed in the recorded lesson. Keeping the
 
 Deferred topics were deeper ports/networking, Kubernetes authentication/permissions, external URL exposure, resource requests/limits and GitOps. Today's exercise did not test multi-node failover, persistent transaction recovery, an actual Order API caller, DNS resolution from a Pod or post-apply readiness. Those limits do not erase the practical results I did observe.
 
-## T007 — Follow-up doubts after Day 34: localhost, Deployment, Pod, Container, IP and Namespace
+## T007 — Follow-up doubts after Day 34: localhost, Deployment, Pod, Container, IP, Namespace and Workload
 
 These clarifications came **after** I completed and committed Day 34. I wanted to make sure I really understood what is running, what manages it, and how two separate MES applications communicate. They are conceptual discussions, **not new practical exercises**. I did not inspect my office Anthos manifests or run additional `kubectl` commands for these questions. The IPs and office configurations in this section are illustrations unless explicitly identified as Day 34 observations.
 
@@ -836,7 +836,7 @@ This also revisits T004's port-forwarding confusion. `kubectl port-forward` crea
 I had said, “Workload = actual application,” then wondered whether **Deployment** just means `deployment.yaml`. My corrected understanding:
 
 - **My actual application** is the Station Manager or Employee API program that executes as a process inside a container.
-- **Workload** is a general Kubernetes term for a running application/task and the resources that manage it. It is not a separate executable object or merely a name; GKE's *Workloads* screen typically groups workload resources such as Deployments.
+- **Workload** is a general term for an application or task running in Kubernetes. It is **not a separate object above Deployment that manages the Deployment**. The actual Kubernetes resource used to manage our Employee API Pods is the Deployment (together with its controllers). GKE’s *Workloads* screen is a user-interface view for inspecting resources such as Deployments, not another management layer. See T007.11 for the Visual Studio analogy.
 - **Deployment** is an actual **Kubernetes API resource** describing the desired application rollout and Pod configuration. A Deployment controller manages ReplicaSets.
 - **`deployment.yaml`** is my **local text file** that *describes* the Deployment resource. Saving the file alone does nothing to the cluster; `kubectl apply -f ...` submits the description.
 
@@ -847,7 +847,7 @@ A comparison that helped me:
 | **Dockerfile** | Recipe for **building an image** containing my code and dependencies |
 | **Docker image** (`employee-api:v16`) | Packaged application, ready to instantiate; not a running process |
 | **`deployment.yaml`** | Desired configuration for how Kubernetes should **run and maintain** Pods using an image |
-| **Deployment resource in Kubernetes** | Live managed object created/updated from that description |
+| **Deployment resource in Kubernetes** | Actual API object stored in the cluster; the Deployment controller reads it and manages ReplicaSets/rollouts accordingly |
 
 So Dockerfile and Deployment YAML are both **declarations**, but they solve different stages: **build image** versus **deploy and maintain application instances**. Deployment is **not** just a filename.
 
@@ -1114,6 +1114,94 @@ kubectl config view --minify
 #### One-sentence recall
 
 > My Cluster is the whole Kubernetes environment. Inside that cluster, namespaces logically organise namespaced resources. In Day 34 I used `default`; the same cluster can also contain many other namespaces.
+
+<a id="t007-10"></a>
+
+### T007.10 — My doubt: Does the Deployment *object* actually do the work?
+
+After reviewing the Dockerfile comparison, I said: **"`deployment.yaml` describes how Kubernetes should run and manage Pods, while Deployment is the Kubernetes API object created using that YAML. Deployment actually does the job. Is that correct?"**
+
+**My understanding was almost correct.** I needed to separate the **stored Deployment resource** from the **Deployment controller**, which is the software that does the ongoing work.
+
+| Part | What I should remember |
+| --- | --- |
+| **`deployment.yaml`** | Text file on my PC saying *what I want*: e.g. `employee-api`, image `employee-api:v16`, three replicas |
+| **`kubectl apply -f k8s/`** | Submits that description to the Kubernetes API server |
+| **Deployment resource** | Actual Kubernetes API object in the cluster that stores my desired application state |
+| **Deployment controller** | Watches the Deployment object and manages ReplicaSets and rollout changes |
+| **ReplicaSet controller** | Maintains the required number of Pods |
+| **Pod and container** | The Pod is scheduled on a Node; its container executes the Employee API process |
+
+```mermaid
+flowchart TB
+  F[deployment.yaml on my Windows PC: desired 3 replicas] --> APPLY[kubectl apply]
+  APPLY --> API[Kubernetes API server]
+  API --> D[Stored Deployment resource: employee-api]
+  DC[Deployment controller: running control-plane software] -->|Watches and reconciles| D
+  DC --> RS[ReplicaSet resource]
+  RC[ReplicaSet controller] -->|Watches and reconciles| RS
+  RC --> P[3 Employee API Pods]
+  P --> C[Containers run Python / FastAPI]
+```
+
+I can relate a **Dockerfile** to the instructions for *building an image*. I can relate **deployment.yaml** to my specification for *running copies of that image*. But I should not think of the Deployment resource itself as an executable program. **Kubernetes controllers act on the desired state stored in that resource.**
+
+This is why `kubectl get deployment employee-api` can show the desired and ready replica counts even after I close PowerShell: the resource and controllers exist in the cluster, not inside my terminal. The specific three-replica setup was demonstrated on Day 34; the conceptual distinction between object and controller was clarified afterward.
+
+<a id="t007-11"></a>
+
+### T007.11 — My doubt: Workload vs Deployment, and why GKE has a Workloads screen
+
+I understood **"Workload = general term for an application/task"**, but the phrase "and the resources that manage it" made me wonder whether **Workload manages a Deployment**. I also found **"GKE Workloads groups Deployments"** confusing.
+
+**The correction is simple:**
+
+- **Station Manager** is my actual C# application. When it runs in Kubernetes, I can call it a **workload**. This is a general description, not the name of an extra Kubernetes controller.
+- A **Deployment** is a concrete Kubernetes resource I can create and inspect. Its controller manages ReplicaSets and application rollouts.
+- **Workload is not a manager above Deployment.** There is no separate Workload object I need to create first for our Deployment exercise.
+- **GKE's Workloads screen** is a place in the Google Cloud interface that **lists** and lets me inspect workload resources. It does not manage a Deployment by being on that screen. Kubernetes controllers perform that work regardless of which screen I open.
+
+#### Visual Studio analogy — the one that made this clear
+
+When I open **Visual Studio Solution Explorer**, I see my C# projects listed. **Solution Explorer is the screen used to view and navigate the projects; it is not the build system and does not itself execute my Station Manager process.**
+
+Similarly, **GKE → Workloads** is a screen used to locate and inspect workload resources. Clicking `station-manager` might open its Deployment, replica status, related Pods and logs. The screen is not another Kubernetes resource sitting above Deployment.
+
+```mermaid
+flowchart TB
+  UI[GKE Console: Workloads screen
+A view/list, like Visual Studio Solution Explorer]
+  UI -.->|Displays| D[Deployment: station-manager
+Kubernetes API resource]
+  DC[Deployment controller] -->|Manages| R[ReplicaSet]
+  R -->|Maintains| P[Station Manager Pods]
+  P --> C[Containers executing C# Station Manager]
+  D -.->|Desired state read by controller| DC
+```
+
+**Example of what the GKE screen could show** (illustrative, not a screenshot or verified office configuration):
+
+| Workload displayed in GKE | Resource type behind the entry | What actually executes |
+| --- | --- | --- |
+| `station-manager` | Deployment | C# Station Manager process inside container(s) |
+| `mes-api` | Deployment | MES API process inside container(s) |
+| `pdt` | Deployment | PDT process inside container(s) |
+
+There are other kinds of workload resources, including StatefulSets, DaemonSets and Jobs, which we can learn later. **Not every workload has to use a Deployment.**
+
+#### My final interview/revision wording
+
+> **Workload:** General term for the application/task Kubernetes runs. It is not an extra manager.
+>
+> **GKE Workloads:** A console screen showing workload resources, similar to Solution Explorer showing projects.
+>
+> **Deployment:** Actual Kubernetes API resource with desired state; the Deployment controller acts on it.
+>
+> **ReplicaSet:** Maintains the requested Pods through its controller.
+>
+> **Pod → Container → process:** Kubernetes schedules the Pod; the container runs my actual application process.
+
+For my Day 34 example: I have **one Employee API workload described in ordinary language, one `employee-api` Deployment resource, a ReplicaSet and three Pods**, each with an Employee API container. The label **"workload" does not create a further object or management step**.
 
 ## Appendix — Full original pod-description attachment
 
