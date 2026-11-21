@@ -325,6 +325,46 @@ git commit -m "Kubernetes - Added ConfigMap and Secret integration for Employee 
 
 ## T008 · Read my office MES Station Manager manifest
 
+### What does `kind` mean in Kubernetes YAML?
+
+When I open a manifest, I look at `apiVersion` and `kind` to see which Kubernetes object it describes. For example, `apiVersion: apps/v1` selects an API group and version, and `kind: StatefulSet` selects the resource type within that API. The exact value from my office YAML is **`StatefulSet`**. I used “Stateful” as shorthand in conversation. `metadata.name` identifies the particular object, and the file name `deployment.yaml` is simply how I find the file.
+
+| YAML `kind` | What it does | Where I saw it |
+|---|---|---|
+| `Deployment` | Manages replicas of an app through a ReplicaSet. Replicas are generally interchangeable and replacements receive generated names. | My local Employee API, with three replicas. |
+| `StatefulSet` | Manages replicas with stable ordinal identities. A replacement can reuse the same ordinal name with a new Pod UID. If the manifest defines per-replica persistent volume claims, the replacement can reuse its claim. | My office MES Station Manager manifest. |
+| `Pod` | Runs one or more containers together. A workload controller can create and replace Pods from its template. | The running Employee API and Station Manager instances. |
+| `Service` | Provides a stable network endpoint for a changing set of Pods. | My local `employee-api-service`. |
+| `ConfigMap` | Holds non-sensitive configuration that a Pod can reference. | The Employee API and Station Manager settings. |
+| `Secret` | Holds sensitive values that a Pod can reference. | The Employee API lab's dummy API key. |
+
+### Example 1 · What stays the same when a StatefulSet Pod is replaced?
+
+Imagine my Station Manager StatefulSet has two replicas, `station-manager-0` and `station-manager-1`. I am using a short example name and an illustrative replica count. The office excerpt did not confirm the actual count.
+
+| What I check | Before Pod 0 is replaced | After Pod 0 is replaced |
+|---|---|---|
+| Pod 0 name | `station-manager-0` | `station-manager-0` |
+| Pod 0 UID, Kubernetes' unique ID for that specific Pod | `uid-A` | `uid-B` |
+| Application process | The original Station Manager process is running | A new process starts with fresh memory |
+| Disk claim, if the StatefulSet gives each replica one | `data-station-manager-0` | The replacement can mount `data-station-manager-0` again and read files written there |
+
+The **ordinal** is the number at the end of the name. Here, `0` and `1` identify two replica positions. If Kubernetes replaces the Pod at position `0`, the new Pod takes that position and keeps its name. The UID lets me tell the two Pod objects apart. If the old process wrote its work only to memory, the replacement loses that work. If it wrote a file to its persistent disk and the replacement mounts that same disk, the file can still be there. The supplied office YAML did not show whether such a disk exists.
+
+### Example 2 · What is inside a Pod?
+
+In my local lab, the Employee API Deployment asks for three Pods. Each Pod runs its own copy of the `employee-api` container. That gives me **three Pods and three application containers**.
+
+Imagine I extend the Pod template to include a second container that ships logs from a shared volume. Each Pod would then hold **one API container and one log shipper**, for three Pods and six containers. The two containers inside each Pod share its network and can share a volume if I configure one. The controller creates three copies of the entire Pod template.
+
+If the API container crashes and Kubernetes restarts it inside the same Pod, the Pod keeps its name and UID. If the ReplicaSet replaces the entire Pod, it creates a new Pod from the template. In the two-container example, both containers start in the replacement Pod. The log shipper is illustrative. The lab template showed just the API container.
+
+### How would I recognise the difference after a Pod is replaced?
+
+For the **Employee API Deployment**, the Service gives callers a stable endpoint while individual Pods come and go. The Deployment's ReplicaSet creates a replacement with a generated name. This model fits replicas that can serve the same requests without callers needing to address a particular Pod.
+
+For the **Station Manager StatefulSet**, a Pod might be named `medge-sc-be1-lids-stn-be1-5010a-download-0`. If the controller replaces ordinal `0`, the replacement can use that same name while getting a new UID and starting new container processes. The ordinal describes Kubernetes identity. The manifest excerpt does not establish that the Pod has a persistent volume, why the office team chose a StatefulSet, or which station the application serves. A Deployment can also use persistent storage if configured, so I check the workload's storage and app configuration directly. [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), [Kubernetes StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+
 I began with a question about a station identifier such as `STN-100-XX` and how to find a specific Station Manager Pod among perhaps 100–200 instances across the environment. The shared file was called `deployment.yaml`, and the excerpt identified the object as a **StatefulSet**. Its workload name was `medge-sc-be1-lids-stn-be1-5010a-download`. Both its selector and Pod template showed `app: medge-sc-be1-lids-stn-be1-5010a-download`. The image was Google Artifact Registry’s `merge-sc:4c7c5d5c` under the supplied `europe-west2-docker.pkg.dev` registry path.
 
 | Container variable | ConfigMap key in the excerpt | Finding |
