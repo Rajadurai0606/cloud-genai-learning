@@ -1,23 +1,22 @@
 # Day 36 · Kubernetes health probes and rolling updates
 
-I completed Day 36 in my Employee API Kubernetes lab. I verified the final Deployment with all three probes configured, then mapped the same ideas to the MES Station Manager StatefulSet. My Git commit was still pending at the end of the recorded session.
+I completed Day 36 in my Employee API Kubernetes lab. I verified the final Deployment with all three probes configured, then mapped the same ideas to the MES Station Manager StatefulSet.
 
 **Scope and evidence.** I worked through the Day 36 discussion in [New_Learning_3](https://chatgpt.com/c/6af89cb9-1d64-83ed-a629-1c7d6264d774), from the Day 36 task and start messages to the completion request. I preserved the lab observations, questions and corrections alongside reference commands and production design examples. The Excel workbook contains the original screenshots, an index in chronological order and a topic audit. I kept this Markdown text-only, with Mermaid flowcharts and screenshot references.
 
 ### My actual lab sequence
 
-Baseline and tunnel → liveness setup → readiness setup → readiness failure and recovery → liveness failure and recovery → workload log discussion → startup setup and verification → production design and pending Git commit.
+Baseline and tunnel → liveness setup → readiness setup → readiness failure and recovery → liveness failure and recovery → workload log discussion → startup setup and verification → production design.
 
 | Topic | What I covered | Evidence |
 | --- | --- | --- |
-| T001 | Pod health, port-forwarding, Service routing and DNS | S001–S005 and source questions |
+| T001 | Pod health, port-forwarding, Service routing and [what DNS does](#what-is-dns) | S001–S005 and source questions |
 | T002 | Liveness, probe failures, restart and backoff | S006–S012 and S034–S043, plus four supplemental occurrences |
 | T003 | Readiness, EndpointSlices and a blocked rollout | S013–S033, including Pod/IP mapping and readiness recovery |
 | T004 | Startup probe and final verification | S044–S048, revision 11 and three available replicas |
 | T005 | [Final Employee API probe YAML](#final-employee-api-probe-yaml), apply and verification, RollingUpdate and ReplicaSets | S011–S012, S014, S044–S048 |
 | T006 | Failure simulation and recovery | S022–S043 and the source recovery transcript |
 | T007 | Troubleshooting and workload-wide logs | Explained in source, workload-wide command not executed |
-| T008 | Git close-out | Pending in closing handoff |
 
 ## T001 · Pod health, port-forwarding and DNS
 
@@ -41,6 +40,8 @@ I used three different questions to interpret the lab. A Pod phase of Running te
 
 I use the localhost tunnel to check one backend. To test normal Service routing, I send a request from inside the cluster to the Service name and inspect its EndpointSlices (T003).
 
+When I reopened Docker Desktop, the existing Deployment still declared three replicas. Kubernetes reconciled that desired state and the container runtime launched FastAPI through Uvicorn. I could resume the lab without running Uvicorn or starting a Docker container myself. The same idea applies to a one-replica Station Manager workload. Its controller replaces a missing Pod, while probes tell Kubernetes how the application inside it is doing.
+
 ```mermaid
 flowchart LR
     A[Local client] --> B[kubectl port-forward and API tunnel]
@@ -50,7 +51,13 @@ flowchart LR
     F --> G[Eligible Pod endpoint]
 ```
 
-For a normal ClusterIP Service, a same-namespace client can use `employee-api-service`. From another namespace I can qualify it as `employee-api-service.<namespace>` or use `employee-api-service.<namespace>.svc.<cluster-domain>`. The usual cluster domain is `cluster.local`, but it can be configured. DNS returns the Service IP for a regular Service. A headless Service can return endpoint addresses instead. The client connects using the Service port, which can differ from the container port. The Service name and port below also appear in the Day 36 screenshots.
+### What is DNS?
+
+I asked what “DSN” meant. The term was **DNS**, short for **Domain Name System**. DNS looks up the IP address associated with a name. It lets me type a hostname like `google.com` without memorising the server address.
+
+In my lab, a Pod in the same namespace could call `http://employee-api-service:8000/health`. Kubernetes DNS would resolve `employee-api-service` to the Service ClusterIP, **`10.105.206.127`**. The client would then connect to that IP on port `8000`. The **Service selector** matches Pod labels, and the **Service data plane** routes the connection to an eligible Pod endpoint. DNS answers the address question. The port and `/health` path are used by the client after lookup.
+
+From another namespace I can use `employee-api-service.default` or the full name `employee-api-service.default.svc.cluster.local` when the cluster uses the usual `cluster.local` domain. In the MES example, Station Manager could reach RabbitMQ using the Service name `rabbitmqcluster.stg-gbwol-medge.svc.cluster.local`, even when RabbitMQ Pods were replaced and got new IP addresses. In GKE, Pods can use this in-cluster path directly. An external client needs an appropriate entry point, such as a Gateway or LoadBalancer Service, since a ClusterIP is internal.
 
 ```powershell
 kubectl get deployment employee-api
@@ -102,11 +109,27 @@ kubectl get pod <failing-pod> -o yaml
 kubectl logs <failing-pod> -c <container> --previous --timestamps
 ```
 
+### What is CrashLoopBackOff?
+
+I asked what `0/1 CrashLoopBackOff 5 (64s ago)` meant. I break the name into three parts:
+
+- **Crash** — The container starts and then stops. In my lab, the process came up, but the kubelet terminated the container after repeated liveness failures on `/health-invalid`.
+- **Loop** — Kubernetes starts the container again, the same failure happens, and the cycle repeats. The container can restart inside the same Pod, so the Pod name stays the same while the restart count increases.
+- **BackOff** — Kubernetes waits before trying again. As failures continue, it increases the delay between attempts, up to a limit. I see `CrashLoopBackOff` during that waiting period.
+
+My lab cycle was **start → briefly Ready → repeated liveness failures → container terminated → wait → restart**. The Events explain why the container was terminated. The status tells me where it is in the retry cycle.
+
+In that row, **`0/1`** meant zero of one containers were Ready, **`5`** meant the container had restarted five times, and **`64s ago`** was the time since its last restart. Between attempts I could see `0/1 CrashLoopBackOff`. After Kubernetes started the container again and `/health` passed its readiness check, I could briefly see `1/1 Running` with the same restart history. The liveness probe was still calling `/health-invalid`, so repeated HTTP 404s could start the cycle again.
+
+I used `kubectl describe pod <pod-name>` to check the last termination and events, and `kubectl logs <pod-name> --previous` to inspect the previous container's logs. In this lab the `Unhealthy` and `Killing` events identified the failing liveness probe. The backoff status told me Kubernetes was waiting to retry.
+
 ## T003 · Readiness, EndpointSlices and a blocked rollout
 
 ### The healthy-to-unready comparison I checked
 
 I added readiness with delay 5s, period 5s, timeout 2s, failure threshold 2 and explicit `successThreshold: 1`, while keeping liveness enabled. The apply replaced `employee-api-5d4c4895c7` with `employee-api-56d588ccd6`. I saw rollout status progress from 0 to 1 to 2 of 3 updated replicas, then report success while old Pods could still be visible as Terminating. S013–S018 show the rollout and list the Service EndpointSlice using its label.
+
+After two consecutive failed readiness checks, the container becomes unready. Once the readiness check succeeds again, the configured success threshold of one lets the container become ready. Kubernetes can check more frequently than the configured period while the container is unready. I reused the working `/health` route because `/health/ready` returned 404 in this image.
 
 ### EndpointSlices · How the Service knows where to send traffic
 
@@ -169,6 +192,8 @@ I added `startupProbe` after recovering liveness. S044 shows the actual fragment
 
 I added a startup probe after exercising liveness and readiness. While startup has yet to succeed, kubelet holds back the other two probes. Once startup succeeds, liveness and readiness take over. Repeated startup failures at the configured threshold trigger a container restart. I used the existing `/health` endpoint for all three probes in the lab. I verified the startup configuration and healthy rollout. A deliberately slow startup was outside the completed tests.
 
+In the MES example, Station Manager might need about 45 seconds to load its configuration and initialise. A liveness check beginning after 10 seconds could fail repeatedly and restart it before it finishes. A startup probe gives initialisation its own retry window, stops checking after the first success for that container instance, and starts over for the next instance after a restart. I would return startup success only when initialisation actually completes.
+
 I asked whether 12 consecutive failures was the default. I explicitly set `failureThreshold: 12` and `periodSeconds: 5` for startup. The default failure threshold is 3 and the default period is 10 seconds. The 60 seconds from 12 × 5 is a sizing estimate. Scheduling, the first probe timing and the duration of individual checks affect the actual result.
 
 | Config field | Kubernetes default | Startup lab value |
@@ -217,6 +242,8 @@ My first mental model was to stop an old Pod, start a new one, then repeat. The 
 | 4 | 1 | 0 |
 | 10 | 2 | 0 |
 | 100 | 25 | 0 |
+
+For three replicas, a healthy rollout with zero unavailable alternates between 3 and 4 available Pods as each new Pod becomes available and an old Pod is removed. If I set `maxUnavailable: 1`, the controller could proceed with only 2 available Pods. In the three-instance PDT example, keeping three Kubernetes Pods available supports continuity, and the application readiness checks still need to reflect whether those instances can process MES transactions.
 
 At three replicas, `0`, `0%`, and the rounded 25% allowance produce the same unavailability limit. At a different scale the default adapts. A strict zero-unavailable rollout still needs a positive surge allowance to make progress. It can use `maxSurge: 1` with `maxUnavailable: 0`, a configuration I discussed and did not apply. A Pod must be Ready for at least `minReadySeconds` to count as available. In this lab that minimum was zero.
 
@@ -329,18 +356,6 @@ kubectl get events --sort-by=.metadata.creationTimestamp
 ```
 
 [Official kubectl logs reference](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/)
-
-## T008 · Review the final configuration for Git
-
-I marked Day 36 complete and left the Git commit pending. I would run these from the `01-python-fastapi` folder after confirming the final diff contains the intended three `/health` paths and the existing application settings. The commit below is the proposed command from the conversation.
-
-```powershell
-git status --short
-git diff -- k8s/deployment.yaml
-git add k8s/deployment.yaml
-git diff --cached -- k8s/deployment.yaml
-git commit -m "Kubernetes - Added liveness, readiness and startup health probes"
-```
 
 ## Production application · MES Station Manager StatefulSet
 
