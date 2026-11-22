@@ -22,6 +22,16 @@ spec:
           image: employee-api:v16
           imagePullPolicy: IfNotPresent
 
+          # CPU and memory required for scheduling
+          # Limits control the maximum permitted usage
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
           # Load environment variables from our ConfigMap
           envFrom:
             - configMapRef:
